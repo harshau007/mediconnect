@@ -53,6 +53,7 @@ func main() {
 	api := router.Group("/api/v1")
 	{
 		routes.SetupHospitalRoutes(api, queries, db)
+		routes.SetupUserRoutes(api, queries, db)
 	}
 
 	// Catch-all route for frontend (e.g., React/SPA fallback)

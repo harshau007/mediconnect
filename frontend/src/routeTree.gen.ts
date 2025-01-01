@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as AuthenticatedImport } from './routes/_authenticated'
 import { Route as MedicalHistoryIndexImport } from './routes/medical-history/index'
 import { Route as HospitalsIndexImport } from './routes/hospitals/index'
 import { Route as AppointmentsIndexImport } from './routes/appointments/index'
@@ -37,6 +38,11 @@ const DashboardLazyRoute = DashboardLazyImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/dashboard.lazy').then((d) => d.Route))
+
+const AuthenticatedRoute = AuthenticatedImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const MedicalHistoryIndexRoute = MedicalHistoryIndexImport.update({
   id: '/medical-history/',
@@ -72,6 +78,13 @@ const AppointmentsBookRoute = AppointmentsBookImport.update({
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthenticatedImport
+      parentRoute: typeof rootRoute
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -127,6 +140,7 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
+  '': typeof AuthenticatedRoute
   '/dashboard': typeof DashboardLazyRoute
   '/settings': typeof SettingsLazyRoute
   '/appointments/book': typeof AppointmentsBookRoute
@@ -137,6 +151,7 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
+  '': typeof AuthenticatedRoute
   '/dashboard': typeof DashboardLazyRoute
   '/settings': typeof SettingsLazyRoute
   '/appointments/book': typeof AppointmentsBookRoute
@@ -148,6 +163,7 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
+  '/_authenticated': typeof AuthenticatedRoute
   '/dashboard': typeof DashboardLazyRoute
   '/settings': typeof SettingsLazyRoute
   '/appointments/book': typeof AppointmentsBookRoute
@@ -160,6 +176,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | ''
     | '/dashboard'
     | '/settings'
     | '/appointments/book'
@@ -169,6 +186,7 @@ export interface FileRouteTypes {
     | '/medical-history'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | ''
     | '/dashboard'
     | '/settings'
     | '/appointments/book'
@@ -178,6 +196,7 @@ export interface FileRouteTypes {
     | '/medical-history'
   id:
     | '__root__'
+    | '/_authenticated'
     | '/dashboard'
     | '/settings'
     | '/appointments/book'
@@ -189,6 +208,7 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
+  AuthenticatedRoute: typeof AuthenticatedRoute
   DashboardLazyRoute: typeof DashboardLazyRoute
   SettingsLazyRoute: typeof SettingsLazyRoute
   AppointmentsBookRoute: typeof AppointmentsBookRoute
@@ -199,6 +219,7 @@ export interface RootRouteChildren {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRoute: AuthenticatedRoute,
   DashboardLazyRoute: DashboardLazyRoute,
   SettingsLazyRoute: SettingsLazyRoute,
   AppointmentsBookRoute: AppointmentsBookRoute,
@@ -218,6 +239,7 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
+        "/_authenticated",
         "/dashboard",
         "/settings",
         "/appointments/book",
@@ -226,6 +248,9 @@ export const routeTree = rootRoute
         "/hospitals/",
         "/medical-history/"
       ]
+    },
+    "/_authenticated": {
+      "filePath": "_authenticated.tsx"
     },
     "/dashboard": {
       "filePath": "dashboard.lazy.tsx"

@@ -81,69 +81,74 @@ export default function Hospitals() {
           <h2 className="text-3xl font-bold tracking-tight">Hospitals</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {hospitalsPage.map((hospital) => (
-            <Link
-              key={hospital.id}
-              to="/hospitals/$hospitalId"
-              params={{
-                hospitalId: hospital.id.toString(),
-              }}
-            >
-              <Card className="h-full transition-all duration-200 ease-in-out transform hover:scale-102 hover:shadow-lg border-2 hover:border-primary/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-semibold flex items-center justify-between">
-                    <span>{hospital.name}</span>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <span className="text-muted-foreground">
-                          {hospital.address}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>Location</TooltipContent>
-                    </Tooltip>
-                  </CardTitle>
-                  <CardDescription>
-                    <Badge
-                      variant={hospital.isOpen.Bool ? "default" : "destructive"}
-                      className="mt-2"
+          {hospitalsPage &&
+            hospitalsPage.map((hospital) => (
+              <Link
+                key={hospital.id}
+                to="/hospitals/$hospitalId"
+                params={{
+                  hospitalId: hospital.id.toString(),
+                }}
+              >
+                <Card className="h-full transition-all duration-200 ease-in-out transform hover:scale-102 hover:shadow-lg border-2 hover:border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl font-semibold flex items-center justify-between">
+                      <span>{hospital.name}</span>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className="text-muted-foreground">
+                            {hospital.address}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Location</TooltipContent>
+                      </Tooltip>
+                    </CardTitle>
+                    <CardDescription>
+                      <Badge
+                        variant={
+                          hospital.isOpen.Bool ? "default" : "destructive"
+                        }
+                        className="mt-2"
+                      >
+                        {hospital.isOpen.Bool ? (
+                          <CheckCircle className="h-3 w-3 mr-1 inline" />
+                        ) : (
+                          <XCircle className="h-3 w-3 mr-1 inline" />
+                        )}
+                        {hospital.isOpen.Bool ? "Open" : "Closed"}
+                      </Badge>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground truncate">
+                      Located in: {hospital.address}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="flex justify-between items-center">
+                    <div className="text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4 mr-2 inline" />
+                      Last inspected:{" "}
+                      {new Date(
+                        hospital.lastInspected.Time
+                      ).toLocaleDateString()}
+                    </div>
+                    <Link
+                      to="/appointments/book"
+                      search={{
+                        hospital: hospital.name,
+                        date: formattedDate,
+                        time: formattedTime,
+                        doctor: "",
+                      }}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none"
                     >
-                      {hospital.isOpen.Bool ? (
-                        <CheckCircle className="h-3 w-3 mr-1 inline" />
-                      ) : (
-                        <XCircle className="h-3 w-3 mr-1 inline" />
-                      )}
-                      {hospital.isOpen.Bool ? "Open" : "Closed"}
-                    </Badge>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground truncate">
-                    Located in: {hospital.address}
-                  </p>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center">
-                  <div className="text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2 inline" />
-                    Last inspected:{" "}
-                    {new Date(hospital.lastInspected.Time).toLocaleDateString()}
-                  </div>
-                  <Link
-                    to="/appointments/book"
-                    search={{
-                      hospital: hospital.name,
-                      date: formattedDate,
-                      time: formattedTime,
-                      doctor: "",
-                    }}
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Appointment
-                  </Link>
-                </CardFooter>
-              </Card>
-            </Link>
-          ))}
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Appointment
+                    </Link>
+                  </CardFooter>
+                </Card>
+              </Link>
+            ))}
         </div>
       </div>
     </TooltipProvider>

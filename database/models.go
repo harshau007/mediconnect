@@ -9,20 +9,34 @@ import (
 )
 
 type Hospital struct {
-	ID                 int64 `json:"id"`
-	Name               string `json:"name"`
-	Address            string `json:"address"`
-	Phone              string `json:"phone"`
-	Email              string `json:"email"`
-	Website            string `json:"website"`
-	VisitingHours      string `json:"visitingHours"`
+	ID                 int64        `json:"id"`
+	Name               string       `json:"name"`
+	Address            string       `json:"address"`
+	Phone              string       `json:"phone"`
+	Email              string       `json:"email"`
+	Website            string       `json:"website"`
+	VisitingHours      string       `json:"visitingHours"`
 	IsOpen             sql.NullBool `json:"isOpen"`
 	LastInspected      sql.NullTime `json:"lastInspected"`
-	Facilities         string `json:"facilities"`
-	QueueLength        int64 `json:"queueLength"`
-	AverageWaitingTime int64 `json:"averageWaitingTime"`
-	CurrentWaitingTime int64 `json:"currentWaitingTime"`
+	Facilities         string       `json:"facilities"`
+	QueueLength        int64        `json:"queueLength"`
+	AverageWaitingTime int64        `json:"averageWaitingTime"`
+	CurrentWaitingTime int64        `json:"currentWaitingTime"`
 	IsCrowded          sql.NullBool `json:"isCrowded"`
 	CreatedAt          sql.NullTime `json:"createdAt"`
 	UpdatedAt          sql.NullTime `json:"updatedAt"`
+}
+
+type User struct {
+	ID              int64        `json:"id"`
+	FirstName       string       `json:"firstName"`
+	LastName        string       `json:"lastName"`
+	Phone           string       `json:"phone"`
+	Email           string       `json:"email"`
+	IsEmailVerified sql.NullBool `json:"isEmailVerified"`
+	AadharNumber    string       `json:"aadharNumber"`
+	Password        string       `json:"password"`
+	Role            string       `json:"role"`
+	CreatedAt       sql.NullTime `json:"createdAt"`
+	UpdatedAt       sql.NullTime `json:"updatedAt"`
 }

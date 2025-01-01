@@ -47,3 +47,71 @@ WHERE id = ?;
 UPDATE hospital
 SET last_inspected = CURRENT_TIMESTAMP
 WHERE id = ?;
+
+-- name: GetUserByID :one
+SELECT * FROM user
+WHERE id = ? LIMIT 1;
+
+-- name: GetUserByEmail :one
+SELECT * FROM user
+WHERE email = ? LIMIT 1;
+
+-- name: GetUserByPhone :one
+SELECT * FROM user
+WHERE phone = ? LIMIT 1;
+
+-- name: GetUserByAadhar :one
+SELECT * FROM user
+WHERE aadhar_number = ? LIMIT 1;
+
+-- name: ListUsers :many
+SELECT * FROM user
+WHERE 
+  (is_email_verified = ? OR ? = FALSE) AND
+  (role = ? OR ? = FALSE)
+ORDER BY updated_at DESC;
+
+-- name: CreateUser :one
+INSERT INTO user (
+  first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role
+) VALUES (
+  ?, ?, ?, ?, ?, ?, ?, ?
+)
+RETURNING *;
+
+-- name: UpdateUser :one
+UPDATE user
+SET 
+  first_name = ?,
+  last_name = ?,
+  phone = ?,
+  email = ?,
+  is_email_verified = ?, 
+  aadhar_number = ?, 
+  password = ?, 
+  role = ?, 
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
+-- name: DeleteUserByID :exec
+DELETE FROM user
+WHERE id = ?;
+
+-- name: DeleteUserByEmail :exec
+DELETE FROM user
+WHERE email = ?;
+
+-- name: DeleteUserByAadhar :exec
+DELETE FROM user
+WHERE aadhar_number = ?;
+
+-- name: DeleteUserByPhone :exec
+DELETE FROM user
+WHERE phone = ?;
+
+-- name: VerifyUserEmail :exec
+UPDATE user
+SET is_email_verified = TRUE, 
+    updated_at = CURRENT_TIMESTAMP
+WHERE email = ?;
