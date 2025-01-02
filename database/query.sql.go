@@ -73,6 +73,34 @@ func (q *Queries) CreateHospital(ctx context.Context, arg CreateHospitalParams) 
 	return i, err
 }
 
+const createOTP = `-- name: CreateOTP :one
+INSERT INTO otp (
+    user_id,
+    otp_number
+) VALUES (
+    ?, ?
+)
+RETURNING id, user_id, otp_number, created_at, updated_at
+`
+
+type CreateOTPParams struct {
+	UserID    int64  `json:"userId"`
+	OtpNumber string `json:"otpNumber"`
+}
+
+func (q *Queries) CreateOTP(ctx context.Context, arg CreateOTPParams) (Otp, error) {
+	row := q.db.QueryRowContext(ctx, createOTP, arg.UserID, arg.OtpNumber)
+	var i Otp
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OtpNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO user (
   first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role
@@ -128,6 +156,26 @@ WHERE id = ?
 
 func (q *Queries) DeleteHospital(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteHospital, id)
+	return err
+}
+
+const deleteOTP = `-- name: DeleteOTP :exec
+DELETE FROM otp
+WHERE id = ?
+`
+
+func (q *Queries) DeleteOTP(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteOTP, id)
+	return err
+}
+
+const deleteOTPByUserID = `-- name: DeleteOTPByUserID :exec
+DELETE FROM otp
+WHERE user_id = ?
+`
+
+func (q *Queries) DeleteOTPByUserID(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteOTPByUserID, userID)
 	return err
 }
 
@@ -194,6 +242,44 @@ func (q *Queries) GetHospital(ctx context.Context, id int64) (Hospital, error) {
 		&i.AverageWaitingTime,
 		&i.CurrentWaitingTime,
 		&i.IsCrowded,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOTPByID = `-- name: GetOTPByID :one
+SELECT id, user_id, otp_number, created_at, updated_at FROM otp
+WHERE id = ?
+LIMIT 1
+`
+
+func (q *Queries) GetOTPByID(ctx context.Context, id int64) (Otp, error) {
+	row := q.db.QueryRowContext(ctx, getOTPByID, id)
+	var i Otp
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OtpNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOTPByUserID = `-- name: GetOTPByUserID :one
+SELECT id, user_id, otp_number, created_at, updated_at FROM otp
+WHERE user_id = ?
+LIMIT 1
+`
+
+func (q *Queries) GetOTPByUserID(ctx context.Context, userID int64) (Otp, error) {
+	row := q.db.QueryRowContext(ctx, getOTPByUserID, userID)
+	var i Otp
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OtpNumber,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -370,6 +456,40 @@ func (q *Queries) ListHospitals(ctx context.Context, arg ListHospitalsParams) ([
 	return items, nil
 }
 
+const listOTPs = `-- name: ListOTPs :many
+SELECT id, user_id, otp_number, created_at, updated_at FROM otp
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListOTPs(ctx context.Context) ([]Otp, error) {
+	rows, err := q.db.QueryContext(ctx, listOTPs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Otp
+	for rows.Next() {
+		var i Otp
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.OtpNumber,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at FROM user
 WHERE 
@@ -423,6 +543,39 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateEmailVerified = `-- name: UpdateEmailVerified :one
+UPDATE user
+SET 
+  is_email_verified = ?, 
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at
+`
+
+type UpdateEmailVerifiedParams struct {
+	IsEmailVerified sql.NullBool `json:"isEmailVerified"`
+	ID              int64        `json:"id"`
+}
+
+func (q *Queries) UpdateEmailVerified(ctx context.Context, arg UpdateEmailVerifiedParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateEmailVerified, arg.IsEmailVerified, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Phone,
+		&i.Email,
+		&i.IsEmailVerified,
+		&i.AadharNumber,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateHospital = `-- name: UpdateHospital :one
@@ -509,6 +662,33 @@ WHERE id = ?
 func (q *Queries) UpdateHospitalInspection(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, updateHospitalInspection, id)
 	return err
+}
+
+const updateOTP = `-- name: UpdateOTP :one
+UPDATE otp
+SET
+    otp_number = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, user_id, otp_number, created_at, updated_at
+`
+
+type UpdateOTPParams struct {
+	OtpNumber string `json:"otpNumber"`
+	ID        int64  `json:"id"`
+}
+
+func (q *Queries) UpdateOTP(ctx context.Context, arg UpdateOTPParams) (Otp, error) {
+	row := q.db.QueryRowContext(ctx, updateOTP, arg.OtpNumber, arg.ID)
+	var i Otp
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OtpNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateUser = `-- name: UpdateUser :one

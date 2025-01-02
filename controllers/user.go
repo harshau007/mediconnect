@@ -1,7 +1,12 @@
 package controllers
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"fmt"
+	"math/big"
+	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/harshau007/mediconnect/database"
@@ -98,5 +103,190 @@ func SignUp(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 }
 
 // TODO: Implement Verify User function
+type VerifyUserRequest struct {
+	Phone string `json:"phone"`
+}
+
+type VerifyUserResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+func VerifyUser(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var userReq VerifyUserRequest
+		if err := ctx.ShouldBindJSON(&userReq); err != nil {
+			ctx.JSON(http.StatusNotAcceptable, gin.H{
+				"status":  "error",
+				"message": "Invalid request body",
+			})
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Error starting transaction",
+			})
+			return
+		}
+		defer tx.Rollback()
+
+		qtx := queries.WithTx(tx)
+
+		user, err := qtx.GetUserByPhone(ctx, userReq.Phone)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "User not found",
+			})
+			return
+		}
+
+		if otp, err := qtx.GetOTPByUserID(ctx, user.ID); err == nil {
+			err = qtx.DeleteOTP(ctx, otp.ID)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"status":  "error",
+					"message": "Error deleting existing OTP",
+				})
+				return
+			}
+		}
+
+		otp, err := qtx.CreateOTP(ctx, database.CreateOTPParams{
+			UserID:    user.ID,
+			OtpNumber: generateOTP(),
+		})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Error creating OTP",
+			})
+			return
+		}
+
+		// TODO: Send OTP to mobile number
+		fmt.Println(otp.OtpNumber)
+		tx.Commit()
+
+		ctx.JSON(http.StatusOK, VerifyUserResponse{
+			Status:  "success",
+			Message: "OTP sent successfully",
+		})
+	}
+}
+func generateOTP() string {
+	const max = 1000000
+
+	n, err := rand.Int(rand.Reader, big.NewInt(max))
+	if err != nil {
+		fmt.Printf("failed to generate OTP: %v", err)
+	}
+
+	return fmt.Sprintf("%06d", n.Int64())
+}
+
+type VerifyOTPRequest struct {
+	Phone string `json:"phone"`
+	OTP   string `json:"otp"`
+}
+
+type VerifyOTPResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+func VerifyOTP(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var userReq VerifyOTPRequest
+		if err := ctx.ShouldBindJSON(&userReq); err != nil {
+			ctx.JSON(http.StatusNotAcceptable, gin.H{
+				"status":  "error",
+				"message": "Invalid request body",
+			})
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Error starting transaction",
+			})
+			return
+		}
+		defer tx.Rollback()
+
+		qtx := queries.WithTx(tx)
+
+		user, err := qtx.GetUserByPhone(ctx, userReq.Phone)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "user does not exist",
+			})
+			return
+		}
+
+		if user.IsEmailVerified.Bool {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "user already verified",
+			})
+			return
+		}
+
+		otp, err := qtx.GetOTPByUserID(ctx, user.ID)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "otp does not exist",
+			})
+			return
+		}
+
+		if strings.TrimSpace(otp.OtpNumber) != strings.TrimSpace(userReq.OTP) {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "otp mismatch",
+			})
+			return
+		}
+
+		_, err = qtx.UpdateEmailVerified(ctx, database.UpdateEmailVerifiedParams{
+			ID: user.ID,
+			IsEmailVerified: sql.NullBool{
+				Bool:  true,
+				Valid: true,
+			},
+		})
+		if err != nil {
+			fmt.Println(err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "failed in updating user",
+			})
+			return
+		}
+
+		err = qtx.DeleteOTP(ctx, otp.ID)
+		if err != nil {
+			fmt.Println(err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "failed in deleting otp",
+			})
+			return
+		}
+		tx.Commit()
+
+		ctx.JSON(http.StatusAccepted, VerifyOTPResponse{
+			Status:  "success",
+			Message: "User verified",
+		})
+	}
+}
 
 // TODO: Implement the Login function with JWT generation

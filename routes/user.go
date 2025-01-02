@@ -9,8 +9,10 @@ import (
 )
 
 func SetupUserRoutes(api *gin.RouterGroup, queries *database.Queries, db *sql.DB) {
-	hospitals := api.Group("/user")
+	user := api.Group("/user")
 	{
-		hospitals.POST("/signup", controllers.SignUp(queries, db))
+		user.POST("/signup", controllers.SignUp(queries, db))
+		user.POST("/verify", controllers.VerifyUser(queries, db))
+		user.PATCH("/verify", controllers.VerifyOTP(queries, db))
 	}
 }

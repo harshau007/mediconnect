@@ -24,7 +24,7 @@ func main() {
 	router.Use(middleware.CORSMiddleware())
 
 	ctx := context.Background()
-	db, err := sql.Open("sqlite3", "./mediconnect.db")
+	db, err := sql.Open("sqlite3", "file:./mediconnect.db?_foreign_keys=on")
 	if err != nil {
 		log.Fatal("Error opening database connection: ", err)
 	}

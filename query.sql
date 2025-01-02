@@ -94,6 +94,14 @@ SET
 WHERE id = ?
 RETURNING *;
 
+-- name: UpdateEmailVerified :one
+UPDATE user
+SET 
+  is_email_verified = ?, 
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
 -- name: DeleteUserByID :exec
 DELETE FROM user
 WHERE id = ?;
@@ -115,3 +123,42 @@ UPDATE user
 SET is_email_verified = TRUE, 
     updated_at = CURRENT_TIMESTAMP
 WHERE email = ?;
+
+-- name: CreateOTP :one
+INSERT INTO otp (
+    user_id,
+    otp_number
+) VALUES (
+    ?, ?
+)
+RETURNING *;
+
+-- name: GetOTPByID :one
+SELECT * FROM otp
+WHERE id = ?
+LIMIT 1;
+
+-- name: GetOTPByUserID :one
+SELECT * FROM otp
+WHERE user_id = ?
+LIMIT 1;
+
+-- name: ListOTPs :many
+SELECT * FROM otp
+ORDER BY created_at DESC;
+
+-- name: UpdateOTP :one
+UPDATE otp
+SET
+    otp_number = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
+-- name: DeleteOTP :exec
+DELETE FROM otp
+WHERE id = ?;
+
+-- name: DeleteOTPByUserID :exec
+DELETE FROM otp
+WHERE user_id = ?;

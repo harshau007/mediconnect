@@ -27,6 +27,14 @@ type Hospital struct {
 	UpdatedAt          sql.NullTime `json:"updatedAt"`
 }
 
+type Otp struct {
+	ID        int64        `json:"id"`
+	UserID    int64        `json:"userId"`
+	OtpNumber string       `json:"otpNumber"`
+	CreatedAt sql.NullTime `json:"createdAt"`
+	UpdatedAt sql.NullTime `json:"updatedAt"`
+}
+
 type User struct {
 	ID              int64        `json:"id"`
 	FirstName       string       `json:"firstName"`
