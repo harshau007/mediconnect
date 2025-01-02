@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { removeAuthToken } from "@/lib/auth";
+import { Link, redirect } from "@tanstack/react-router";
 import { Bell, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { ModeToggle } from "./mode-toggle";
@@ -15,6 +16,16 @@ import { Input } from "./ui/input";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+
+  const logout = async () => {
+    try {
+      removeAuthToken();
+      redirect({ to: "/login" });
+    } catch (error) {
+      console.log("Logout failed:", error);
+    }
+  };
+
   return (
     <header className="flex w-full items-center justify-between px-4 py-4 bg-background border-b md:px-6">
       <div className="flex w-full items-center">
@@ -39,18 +50,18 @@ export default function Header() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link
-                to="/settings"
-                className="flex"
-                onClick={() => setOpen(false)}
-              >
+            <Link to="/settings" onClick={() => setOpen(false)}>
+              <DropdownMenuItem className="hover:cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
-              </Link>
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <Link onClick={logout}>
+              <DropdownMenuItem className="hover:cursor-pointer">
+                Log Out
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

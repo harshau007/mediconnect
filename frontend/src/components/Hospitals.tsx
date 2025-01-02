@@ -1,5 +1,7 @@
 "use client";
 
+import { api } from "@/lib/api";
+import { isAuthenticated } from "@/lib/auth";
 import { useHospitalStore } from "@/store/useHospitalStore";
 import { Hospital } from "@/types/hospital";
 import { Link } from "@tanstack/react-router";
@@ -49,11 +51,17 @@ export default function Hospitals() {
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/v1/hospitals/");
-        if (!response.ok) {
+        const authToken = isAuthenticated();
+        const response = await api.get("/hospitals/", {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+        if (!response.data) {
           throw new Error("Failed to fetch hospitals");
         }
-        const data: ApiResponse = await response.json();
+        const data: ApiResponse = await response.data;
+        console.log(data);
         setHospitals(data.data);
         setHospitalsPage(data.data);
         setIsLoading(false);

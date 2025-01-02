@@ -1,7 +1,14 @@
 import AppSidebar from "@/components/AppSidebar";
 import Header from "@/components/Header";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
+import { isAuthenticated } from "@/lib/auth";
+import {
+  createRootRoute,
+  Link,
+  Outlet,
+  redirect,
+  useLocation,
+} from "@tanstack/react-router";
 
 export const Route = createRootRoute({
   notFoundComponent: () => {
@@ -21,7 +28,43 @@ export const Route = createRootRoute({
     );
   },
 
-  component: () => (
+  beforeLoad: async ({ location }) => {
+    const isAuthRoute = ["/login", "/signup", "/verify-phone"].includes(
+      location.pathname
+    );
+    if (isAuthRoute) {
+      if (isAuthenticated()) {
+        throw redirect({ to: "/dashboard" });
+      }
+    } else {
+      if (!isAuthenticated()) {
+        throw redirect({ to: "/login" });
+      }
+
+      return null;
+    }
+  },
+  component: RouteComponent,
+});
+
+function RouteComponent() {
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  const authPaths = ["/login", "/signup", "/verify-phone"];
+  const isAuthRoute = authPaths.includes(currentPath);
+
+  if (isAuthRoute) {
+    return (
+      <div className="flex flex-1 min-h-screen items-center justify-center bg-background text-foreground">
+        <div className="w-full p-4">
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="flex flex-1 h-screen w-full overflow-hidden bg-background text-foreground">
       <AppSidebar />
       <SidebarInset className="flex w-full lg:w-[90rem]">
@@ -34,5 +77,5 @@ export const Route = createRootRoute({
         </div>
       </SidebarInset>
     </div>
-  ),
-});
+  );
+}

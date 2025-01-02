@@ -7,8 +7,10 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 	"github.com/harshau007/mediconnect/database"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,7 +22,6 @@ type SignupRequest struct {
 	LastName     string `json:"lastName"`
 	Phone        string `json:"phone"`
 	AadharNumber string `json:"aadharNumber"`
-	Role         string `json:"role"`
 }
 
 type SignupResponse struct {
@@ -79,7 +80,7 @@ func SignUp(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 			Password:     string(hashedPassword),
 			Phone:        userReq.Phone,
 			AadharNumber: userReq.AadharNumber,
-			Role:         userReq.Role,
+			Role:         "user",
 			IsEmailVerified: sql.NullBool{
 				Bool:  false,
 				Valid: true,
@@ -102,7 +103,6 @@ func SignUp(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-// TODO: Implement Verify User function
 type VerifyUserRequest struct {
 	Phone string `json:"phone"`
 }
@@ -289,4 +289,90 @@ func VerifyOTP(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-// TODO: Implement the Login function with JWT generation
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
+func Login(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var userReq LoginRequest
+		if err := ctx.ShouldBindJSON(&userReq); err != nil {
+			ctx.JSON(http.StatusNotAcceptable, gin.H{
+				"status":  "error",
+				"message": "Invalid request body",
+			})
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Error starting transaction",
+			})
+			return
+		}
+		defer tx.Rollback()
+
+		qtx := queries.WithTx(tx)
+
+		user, err := qtx.GetUserByEmail(ctx, userReq.Email)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "User not found",
+			})
+			return
+		}
+
+		if !user.IsEmailVerified.Bool {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "User not verified",
+			})
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userReq.Password))
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"status":  "error",
+				"message": "Invalid password",
+			})
+			return
+		}
+
+		token := GenerateToken(map[string]string{
+			"id": fmt.Sprintf("%d", user.ID),
+		})
+
+		ctx.JSON(http.StatusOK, LoginResponse{
+			Token: token,
+		})
+	}
+}
+
+func GenerateToken(data map[string]string) string {
+	expirationTime := time.Now().Add(30 * 24 * time.Hour)
+	issuedAt := time.Now().Unix()
+
+	claims := jwt.MapClaims{
+		"sub": data,
+		"iat": issuedAt,
+		"exp": expirationTime.Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		return ""
+	}
+
+	return tokenString
+}

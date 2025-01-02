@@ -13,7 +13,9 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AuthenticatedImport } from './routes/_authenticated'
+import { Route as VerifyPhoneImport } from './routes/verify-phone'
+import { Route as SignupImport } from './routes/signup'
+import { Route as LoginImport } from './routes/login'
 import { Route as MedicalHistoryIndexImport } from './routes/medical-history/index'
 import { Route as HospitalsIndexImport } from './routes/hospitals/index'
 import { Route as AppointmentsIndexImport } from './routes/appointments/index'
@@ -39,8 +41,21 @@ const DashboardLazyRoute = DashboardLazyImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/dashboard.lazy').then((d) => d.Route))
 
-const AuthenticatedRoute = AuthenticatedImport.update({
-  id: '/_authenticated',
+const VerifyPhoneRoute = VerifyPhoneImport.update({
+  id: '/verify-phone',
+  path: '/verify-phone',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SignupRoute = SignupImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LoginRoute = LoginImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -78,11 +93,25 @@ const AppointmentsBookRoute = AppointmentsBookImport.update({
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AuthenticatedImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupImport
+      parentRoute: typeof rootRoute
+    }
+    '/verify-phone': {
+      id: '/verify-phone'
+      path: '/verify-phone'
+      fullPath: '/verify-phone'
+      preLoaderRoute: typeof VerifyPhoneImport
       parentRoute: typeof rootRoute
     }
     '/dashboard': {
@@ -140,7 +169,9 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  '': typeof AuthenticatedRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/verify-phone': typeof VerifyPhoneRoute
   '/dashboard': typeof DashboardLazyRoute
   '/settings': typeof SettingsLazyRoute
   '/appointments/book': typeof AppointmentsBookRoute
@@ -151,7 +182,9 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
-  '': typeof AuthenticatedRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/verify-phone': typeof VerifyPhoneRoute
   '/dashboard': typeof DashboardLazyRoute
   '/settings': typeof SettingsLazyRoute
   '/appointments/book': typeof AppointmentsBookRoute
@@ -163,7 +196,9 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/_authenticated': typeof AuthenticatedRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/verify-phone': typeof VerifyPhoneRoute
   '/dashboard': typeof DashboardLazyRoute
   '/settings': typeof SettingsLazyRoute
   '/appointments/book': typeof AppointmentsBookRoute
@@ -176,7 +211,9 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | ''
+    | '/login'
+    | '/signup'
+    | '/verify-phone'
     | '/dashboard'
     | '/settings'
     | '/appointments/book'
@@ -186,7 +223,9 @@ export interface FileRouteTypes {
     | '/medical-history'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | ''
+    | '/login'
+    | '/signup'
+    | '/verify-phone'
     | '/dashboard'
     | '/settings'
     | '/appointments/book'
@@ -196,7 +235,9 @@ export interface FileRouteTypes {
     | '/medical-history'
   id:
     | '__root__'
-    | '/_authenticated'
+    | '/login'
+    | '/signup'
+    | '/verify-phone'
     | '/dashboard'
     | '/settings'
     | '/appointments/book'
@@ -208,7 +249,9 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
-  AuthenticatedRoute: typeof AuthenticatedRoute
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
+  VerifyPhoneRoute: typeof VerifyPhoneRoute
   DashboardLazyRoute: typeof DashboardLazyRoute
   SettingsLazyRoute: typeof SettingsLazyRoute
   AppointmentsBookRoute: typeof AppointmentsBookRoute
@@ -219,7 +262,9 @@ export interface RootRouteChildren {
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  AuthenticatedRoute: AuthenticatedRoute,
+  LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
+  VerifyPhoneRoute: VerifyPhoneRoute,
   DashboardLazyRoute: DashboardLazyRoute,
   SettingsLazyRoute: SettingsLazyRoute,
   AppointmentsBookRoute: AppointmentsBookRoute,
@@ -239,7 +284,9 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/_authenticated",
+        "/login",
+        "/signup",
+        "/verify-phone",
         "/dashboard",
         "/settings",
         "/appointments/book",
@@ -249,8 +296,14 @@ export const routeTree = rootRoute
         "/medical-history/"
       ]
     },
-    "/_authenticated": {
-      "filePath": "_authenticated.tsx"
+    "/login": {
+      "filePath": "login.tsx"
+    },
+    "/signup": {
+      "filePath": "signup.tsx"
+    },
+    "/verify-phone": {
+      "filePath": "verify-phone.tsx"
     },
     "/dashboard": {
       "filePath": "dashboard.lazy.tsx"
