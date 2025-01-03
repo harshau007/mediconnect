@@ -3,6 +3,7 @@ import { isAuthenticated } from "@/lib/auth";
 import { useUserStore } from "@/store/useUserStore";
 import { User } from "@/types/user";
 import { useEffect, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -121,6 +122,27 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16 rounded-lg">
+                <AvatarImage
+                  src={"https://i.pravatar.cc/150?img=" + getUser()?.id}
+                  alt={getUser()?.firstName! + " " + getUser()?.lastName!}
+                />
+                <AvatarFallback className="rounded-lg">
+                  {getUser()?.firstName[0]! + getUser()?.lastName[0]!}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <Label htmlFor="avatar">Change Profile Picture</Label>
+                <Input
+                  id="avatar"
+                  type="file"
+                  accept="image/*"
+                  className="mt-2"
+                  // onChange={handleAvatarChange}
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="first-name">First Name</Label>

@@ -22,6 +22,7 @@ type SignupRequest struct {
 	LastName     string `json:"lastName"`
 	Phone        string `json:"phone"`
 	AadharNumber string `json:"aadharNumber"`
+	Role         string `json:"role"`
 }
 
 type SignupResponse struct {
@@ -80,7 +81,7 @@ func SignUp(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 			Password:     string(hashedPassword),
 			Phone:        userReq.Phone,
 			AadharNumber: userReq.AadharNumber,
-			Role:         "user",
+			Role:         userReq.Role,
 			IsVerified: sql.NullBool{
 				Bool:  false,
 				Valid: true,
@@ -556,6 +557,39 @@ func ChangePassword(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 		ctx.JSON(http.StatusOK, ChangePasswordResponse{
 			Status:  "success",
 			Message: "Password updated successfully",
+		})
+	}
+}
+
+func GetUserByAadharNumber(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		aadharNumber := ctx.Query("aadharNumber")
+		if aadharNumber == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Invalid Aadhar Number",
+			})
+			return
+		}
+		user, err := queries.GetUserByAadhar(ctx, aadharNumber)
+		if err != nil {
+			fmt.Println(err)
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "User not found",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"data": gin.H{
+				"id":        user.ID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+				"avatar":    fmt.Sprintf("https://i.pravatar.cc/150?img=%d", user.ID),
+			},
 		})
 	}
 }

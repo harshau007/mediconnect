@@ -9,6 +9,8 @@ export interface User {
     Valid: boolean;
   };
   aadharNumber: string;
+  role: string;
+  avatar: string;
   password: string;
   createdAt: {
     Time: string;

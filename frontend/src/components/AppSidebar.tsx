@@ -1,7 +1,14 @@
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 import { Link, useMatchRoute } from "@tanstack/react-router";
-import { History, Home, Hospital, Rocket } from "lucide-react";
+import {
+  History,
+  Home,
+  Hospital,
+  LucideIcon,
+  Rocket,
+  User,
+} from "lucide-react";
 import { NavUser } from "./NavUser";
 import {
   Sidebar,
@@ -13,16 +20,55 @@ import {
   SidebarMenuItem,
 } from "./ui/sidebar";
 
-const navItems = [
-  { to: "/dashboard", icon: Home, label: "Dashboard" },
-  { to: "/hospitals", icon: Hospital, label: "Hospitals" },
-  { to: "/appointments", icon: Rocket, label: "Appointments" },
-  { to: "/medical-history", icon: History, label: "Medical History" },
+type Role = "hospital" | "user";
+
+interface NavItem {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  roles: Role[];
+}
+
+const navItems: readonly NavItem[] = [
+  {
+    to: "/dashboard",
+    icon: Home,
+    label: "Dashboard",
+    roles: ["hospital", "user"],
+  },
+  {
+    to: "/hospitals",
+    icon: Hospital,
+    label: "Hospitals",
+    roles: ["user"],
+  },
+  {
+    to: "/appointments",
+    icon: Rocket,
+    label: "Appointments",
+    roles: ["user"],
+  },
+  {
+    to: "/medical-history",
+    icon: History,
+    label: "Medical History",
+    roles: ["user"],
+  },
+  {
+    to: "/users/",
+    icon: User,
+    label: "Users",
+    roles: ["hospital"],
+  },
 ] as const;
 
 export default function AppSidebar() {
   const matchRoute = useMatchRoute();
   const { getUser } = useUserStore();
+  const userRole = (getUser()?.role as Role) || "";
+  const filteredNavItems = navItems.filter((item) =>
+    item.roles.includes(userRole)
+  );
 
   return (
     <Sidebar>
@@ -31,7 +77,7 @@ export default function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          {navItems.map(({ to, icon: Icon, label }) => {
+          {filteredNavItems.map(({ to, icon: Icon, label }) => {
             const isActive = matchRoute({ to });
             return (
               <SidebarMenuItem key={label} className="px-1.5 py-0.5">
@@ -56,10 +102,7 @@ export default function AppSidebar() {
       <SidebarFooter className="flex flex-col items-center gap-4 p-3">
         <NavUser
           user={{
-            firstname: getUser()?.firstName || "",
-            lastname: getUser()?.lastName || "",
-            email: getUser()?.email || "",
-            avatar: "",
+            avatar: "https://i.pravatar.cc/150?img=" + getUser()?.id,
           }}
         />
       </SidebarFooter>

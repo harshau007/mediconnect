@@ -14,6 +14,10 @@ func SetupHospitalRoutes(api *gin.RouterGroup, queries *database.Queries, db *sq
 	hospitals.Use(middleware.AuthMiddleware(queries, db))
 	{
 		hospitals.GET("/", controllers.GetHospitals(queries, db))
+		hospitals.GET("/unverified", controllers.GetUnVerifiedHospitals(queries, db))
+
 		hospitals.POST("/", controllers.CreateHospital(queries, db))
+
+		hospitals.PATCH("/verify", controllers.VerifyHospital(queries, db))
 	}
 }

@@ -39,7 +39,7 @@ func AuthMiddleware(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 			return []byte("secret"), nil
 		})
 		if err != nil {
-			ctx.JSON(http.StatusUnauthorized, gin.H{
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"status":  "error",
 				"message": "ln 46: Invalid token",
 			})
@@ -76,7 +76,7 @@ func AuthMiddleware(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 		parsedInt, err := strconv.ParseInt(id, 10, 64)
 		user, err := queries.GetUserByID(ctx, parsedInt)
 		if err != nil {
-			ctx.JSON(http.StatusUnauthorized, gin.H{
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"status":  "error",
 				"message": "User does not exist",
 			})

@@ -2,22 +2,33 @@
 SELECT * FROM hospital
 WHERE id = ? LIMIT 1;
 
--- name: ListHospitals :many
+-- name: ListVerifiedHospitals :many
 SELECT * FROM hospital
-WHERE (is_open = ? OR ? IS NULL)
+WHERE is_verified = TRUE
+  AND (is_open = ? OR ? IS NULL)
   AND (average_waiting_time <= ? OR ? IS NULL)
   AND (current_waiting_time <= ? OR ? IS NULL)
   AND (queue_length <= ? OR ? IS NULL)
   AND (address LIKE '%' || ? || '%' OR ? IS NULL)
 ORDER BY last_inspected DESC;
 
+-- name: ListUnverifiedHospitals :many
+SELECT * FROM hospital
+WHERE is_verified = FALSE
+  AND (is_open = ? OR ? IS NULL)
+  AND (average_waiting_time <= ? OR ? IS NULL)
+  AND (current_waiting_time <= ? OR ? IS NULL)
+  AND (queue_length <= ? OR ? IS NULL)
+  AND (address LIKE '%' || ? || '%' OR ? IS NULL)
+ORDER BY updated_at DESC;
+
 -- name: CreateHospital :one
 INSERT INTO hospital (
     name, address, phone, email, website, visiting_hours, is_open,
     facilities, queue_length, average_waiting_time, current_waiting_time,
-    is_crowded
+    is_crowded, is_verified, last_inspected
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 RETURNING *;
 
@@ -38,6 +49,14 @@ SET name = ?,
     last_inspected = ?
 WHERE id = ?
 RETURNING *;
+
+-- name: VerifyHospital :exec
+UPDATE hospital
+SET is_verified = ?,
+    last_inspected = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+
 
 -- name: DeleteHospital :exec
 DELETE FROM hospital

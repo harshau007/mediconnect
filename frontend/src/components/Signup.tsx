@@ -67,7 +67,15 @@ export default function Signup() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await api.post("/user/signup", values);
+      await api.post("/user/signup", {
+        email: values.email,
+        password: values.password,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phone: values.phone,
+        aadharNumber: values.aadharNumber,
+        role: "user",
+      });
       setPhone(values.phone);
       navigate({ to: "/verify-phone" });
     } catch (error) {

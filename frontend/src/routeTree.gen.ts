@@ -16,6 +16,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as VerifyPhoneImport } from './routes/verify-phone'
 import { Route as SignupImport } from './routes/signup'
 import { Route as LoginImport } from './routes/login'
+import { Route as UsersIndexImport } from './routes/users/index'
 import { Route as MedicalHistoryIndexImport } from './routes/medical-history/index'
 import { Route as HospitalsIndexImport } from './routes/hospitals/index'
 import { Route as AppointmentsIndexImport } from './routes/appointments/index'
@@ -56,6 +57,12 @@ const SignupRoute = SignupImport.update({
 const LoginRoute = LoginImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const UsersIndexRoute = UsersIndexImport.update({
+  id: '/users/',
+  path: '/users/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -163,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MedicalHistoryIndexImport
       parentRoute: typeof rootRoute
     }
+    '/users/': {
+      id: '/users/'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -179,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/appointments': typeof AppointmentsIndexRoute
   '/hospitals': typeof HospitalsIndexRoute
   '/medical-history': typeof MedicalHistoryIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -192,6 +207,7 @@ export interface FileRoutesByTo {
   '/appointments': typeof AppointmentsIndexRoute
   '/hospitals': typeof HospitalsIndexRoute
   '/medical-history': typeof MedicalHistoryIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 
 export interface FileRoutesById {
@@ -206,6 +222,7 @@ export interface FileRoutesById {
   '/appointments/': typeof AppointmentsIndexRoute
   '/hospitals/': typeof HospitalsIndexRoute
   '/medical-history/': typeof MedicalHistoryIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -221,6 +238,7 @@ export interface FileRouteTypes {
     | '/appointments'
     | '/hospitals'
     | '/medical-history'
+    | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -233,6 +251,7 @@ export interface FileRouteTypes {
     | '/appointments'
     | '/hospitals'
     | '/medical-history'
+    | '/users'
   id:
     | '__root__'
     | '/login'
@@ -245,6 +264,7 @@ export interface FileRouteTypes {
     | '/appointments/'
     | '/hospitals/'
     | '/medical-history/'
+    | '/users/'
   fileRoutesById: FileRoutesById
 }
 
@@ -259,6 +279,7 @@ export interface RootRouteChildren {
   AppointmentsIndexRoute: typeof AppointmentsIndexRoute
   HospitalsIndexRoute: typeof HospitalsIndexRoute
   MedicalHistoryIndexRoute: typeof MedicalHistoryIndexRoute
+  UsersIndexRoute: typeof UsersIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -272,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppointmentsIndexRoute: AppointmentsIndexRoute,
   HospitalsIndexRoute: HospitalsIndexRoute,
   MedicalHistoryIndexRoute: MedicalHistoryIndexRoute,
+  UsersIndexRoute: UsersIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -293,7 +315,8 @@ export const routeTree = rootRoute
         "/hospitals/$hospitalId",
         "/appointments/",
         "/hospitals/",
-        "/medical-history/"
+        "/medical-history/",
+        "/users/"
       ]
     },
     "/login": {
@@ -325,6 +348,9 @@ export const routeTree = rootRoute
     },
     "/medical-history/": {
       "filePath": "medical-history/index.tsx"
+    },
+    "/users/": {
+      "filePath": "users/index.tsx"
     }
   }
 }

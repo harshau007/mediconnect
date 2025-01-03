@@ -1,2 +1,6 @@
-- [ ] Implement basics
-- [ ] Add Update User func from frontend to backend
+- [x] Implement basics
+- [x] Add Update User func from frontend to backend
+- [x] Add Hospital Verification
+- [ ] Add Hospital reg routes in frontend
+- [ ] Implement appointment func
+- [ ] Implement Medical History func

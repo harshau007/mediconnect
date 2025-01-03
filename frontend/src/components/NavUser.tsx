@@ -25,19 +25,18 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { removeAuthToken } from "@/lib/auth";
+import { useUserStore } from "@/store/useUserStore";
 import { Link, redirect } from "@tanstack/react-router";
 
 export function NavUser({
   user,
 }: {
   user: {
-    firstname: string;
-    lastname: string;
-    email: string;
     avatar: string;
   };
 }) {
   const { isMobile } = useSidebar();
+  const { getUser } = useUserStore();
 
   const logout = async () => {
     try {
@@ -60,17 +59,17 @@ export function NavUser({
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
                   src={user.avatar}
-                  alt={user.firstname + " " + user.lastname}
+                  alt={getUser()?.firstName! + " " + getUser()?.lastName!}
                 />
                 <AvatarFallback className="rounded-lg">
-                  {user?.firstname[0] + user?.lastname[0]}
+                  {getUser()?.firstName[0]! + getUser()?.lastName[0]!}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
-                  {user.firstname + " " + user.lastname}
+                  {getUser()?.firstName! + " " + getUser()?.lastName!}
                 </span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate text-xs">{getUser()?.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -86,17 +85,17 @@ export function NavUser({
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
                     src={user.avatar}
-                    alt={user.firstname + " " + user.lastname}
+                    alt={getUser()?.firstName! + " " + getUser()?.lastName!}
                   />
                   <AvatarFallback className="rounded-lg">
-                    {user?.firstname[0] + user?.lastname[0]}
+                    {getUser()?.firstName[0]! + getUser()?.lastName[0]!}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {user.firstname + " " + user.lastname}
+                    {getUser()?.firstName! + " " + getUser()?.lastName!}
                   </span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs">{getUser()?.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

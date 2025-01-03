@@ -14,11 +14,11 @@ const createHospital = `-- name: CreateHospital :one
 INSERT INTO hospital (
     name, address, phone, email, website, visiting_hours, is_open,
     facilities, queue_length, average_waiting_time, current_waiting_time,
-    is_crowded
+    is_crowded, is_verified, last_inspected
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at
+RETURNING id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, is_verified, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at
 `
 
 type CreateHospitalParams struct {
@@ -34,6 +34,8 @@ type CreateHospitalParams struct {
 	AverageWaitingTime int64        `json:"averageWaitingTime"`
 	CurrentWaitingTime int64        `json:"currentWaitingTime"`
 	IsCrowded          sql.NullBool `json:"isCrowded"`
+	IsVerified         sql.NullBool `json:"isVerified"`
+	LastInspected      sql.NullTime `json:"lastInspected"`
 }
 
 func (q *Queries) CreateHospital(ctx context.Context, arg CreateHospitalParams) (Hospital, error) {
@@ -50,6 +52,8 @@ func (q *Queries) CreateHospital(ctx context.Context, arg CreateHospitalParams) 
 		arg.AverageWaitingTime,
 		arg.CurrentWaitingTime,
 		arg.IsCrowded,
+		arg.IsVerified,
+		arg.LastInspected,
 	)
 	var i Hospital
 	err := row.Scan(
@@ -62,6 +66,7 @@ func (q *Queries) CreateHospital(ctx context.Context, arg CreateHospitalParams) 
 		&i.VisitingHours,
 		&i.IsOpen,
 		&i.LastInspected,
+		&i.IsVerified,
 		&i.Facilities,
 		&i.QueueLength,
 		&i.AverageWaitingTime,
@@ -220,7 +225,7 @@ func (q *Queries) DeleteUserByPhone(ctx context.Context, phone string) error {
 }
 
 const getHospital = `-- name: GetHospital :one
-SELECT id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at FROM hospital
+SELECT id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, is_verified, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at FROM hospital
 WHERE id = ? LIMIT 1
 `
 
@@ -237,6 +242,7 @@ func (q *Queries) GetHospital(ctx context.Context, id int64) (Hospital, error) {
 		&i.VisitingHours,
 		&i.IsOpen,
 		&i.LastInspected,
+		&i.IsVerified,
 		&i.Facilities,
 		&i.QueueLength,
 		&i.AverageWaitingTime,
@@ -382,17 +388,52 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 	return i, err
 }
 
-const listHospitals = `-- name: ListHospitals :many
-SELECT id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at FROM hospital
-WHERE (is_open = ? OR ? IS NULL)
+const listOTPs = `-- name: ListOTPs :many
+SELECT id, user_id, otp_number, created_at, updated_at FROM otp
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListOTPs(ctx context.Context) ([]Otp, error) {
+	rows, err := q.db.QueryContext(ctx, listOTPs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Otp
+	for rows.Next() {
+		var i Otp
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.OtpNumber,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnverifiedHospitals = `-- name: ListUnverifiedHospitals :many
+SELECT id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, is_verified, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at FROM hospital
+WHERE is_verified = FALSE
+  AND (is_open = ? OR ? IS NULL)
   AND (average_waiting_time <= ? OR ? IS NULL)
   AND (current_waiting_time <= ? OR ? IS NULL)
   AND (queue_length <= ? OR ? IS NULL)
   AND (address LIKE '%' || ? || '%' OR ? IS NULL)
-ORDER BY last_inspected DESC
+ORDER BY updated_at DESC
 `
 
-type ListHospitalsParams struct {
+type ListUnverifiedHospitalsParams struct {
 	IsOpen             sql.NullBool   `json:"isOpen"`
 	Column2            interface{}    `json:"column2"`
 	AverageWaitingTime int64          `json:"averageWaitingTime"`
@@ -405,8 +446,8 @@ type ListHospitalsParams struct {
 	Column10           interface{}    `json:"column10"`
 }
 
-func (q *Queries) ListHospitals(ctx context.Context, arg ListHospitalsParams) ([]Hospital, error) {
-	rows, err := q.db.QueryContext(ctx, listHospitals,
+func (q *Queries) ListUnverifiedHospitals(ctx context.Context, arg ListUnverifiedHospitalsParams) ([]Hospital, error) {
+	rows, err := q.db.QueryContext(ctx, listUnverifiedHospitals,
 		arg.IsOpen,
 		arg.Column2,
 		arg.AverageWaitingTime,
@@ -435,45 +476,12 @@ func (q *Queries) ListHospitals(ctx context.Context, arg ListHospitalsParams) ([
 			&i.VisitingHours,
 			&i.IsOpen,
 			&i.LastInspected,
+			&i.IsVerified,
 			&i.Facilities,
 			&i.QueueLength,
 			&i.AverageWaitingTime,
 			&i.CurrentWaitingTime,
 			&i.IsCrowded,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listOTPs = `-- name: ListOTPs :many
-SELECT id, user_id, otp_number, created_at, updated_at FROM otp
-ORDER BY created_at DESC
-`
-
-func (q *Queries) ListOTPs(ctx context.Context) ([]Otp, error) {
-	rows, err := q.db.QueryContext(ctx, listOTPs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Otp
-	for rows.Next() {
-		var i Otp
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.OtpNumber,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -545,6 +553,82 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
+const listVerifiedHospitals = `-- name: ListVerifiedHospitals :many
+SELECT id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, is_verified, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at FROM hospital
+WHERE is_verified = TRUE
+  AND (is_open = ? OR ? IS NULL)
+  AND (average_waiting_time <= ? OR ? IS NULL)
+  AND (current_waiting_time <= ? OR ? IS NULL)
+  AND (queue_length <= ? OR ? IS NULL)
+  AND (address LIKE '%' || ? || '%' OR ? IS NULL)
+ORDER BY last_inspected DESC
+`
+
+type ListVerifiedHospitalsParams struct {
+	IsOpen             sql.NullBool   `json:"isOpen"`
+	Column2            interface{}    `json:"column2"`
+	AverageWaitingTime int64          `json:"averageWaitingTime"`
+	Column4            interface{}    `json:"column4"`
+	CurrentWaitingTime int64          `json:"currentWaitingTime"`
+	Column6            interface{}    `json:"column6"`
+	QueueLength        int64          `json:"queueLength"`
+	Column8            interface{}    `json:"column8"`
+	Column9            sql.NullString `json:"column9"`
+	Column10           interface{}    `json:"column10"`
+}
+
+func (q *Queries) ListVerifiedHospitals(ctx context.Context, arg ListVerifiedHospitalsParams) ([]Hospital, error) {
+	rows, err := q.db.QueryContext(ctx, listVerifiedHospitals,
+		arg.IsOpen,
+		arg.Column2,
+		arg.AverageWaitingTime,
+		arg.Column4,
+		arg.CurrentWaitingTime,
+		arg.Column6,
+		arg.QueueLength,
+		arg.Column8,
+		arg.Column9,
+		arg.Column10,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Hospital
+	for rows.Next() {
+		var i Hospital
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Address,
+			&i.Phone,
+			&i.Email,
+			&i.Website,
+			&i.VisitingHours,
+			&i.IsOpen,
+			&i.LastInspected,
+			&i.IsVerified,
+			&i.Facilities,
+			&i.QueueLength,
+			&i.AverageWaitingTime,
+			&i.CurrentWaitingTime,
+			&i.IsCrowded,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateEmailVerified = `-- name: UpdateEmailVerified :one
 UPDATE user
 SET 
@@ -594,7 +678,7 @@ SET name = ?,
     is_crowded = ?,
     last_inspected = ?
 WHERE id = ?
-RETURNING id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at
+RETURNING id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, is_verified, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at
 `
 
 type UpdateHospitalParams struct {
@@ -642,6 +726,7 @@ func (q *Queries) UpdateHospital(ctx context.Context, arg UpdateHospitalParams) 
 		&i.VisitingHours,
 		&i.IsOpen,
 		&i.LastInspected,
+		&i.IsVerified,
 		&i.Facilities,
 		&i.QueueLength,
 		&i.AverageWaitingTime,
@@ -746,6 +831,24 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const verifyHospital = `-- name: VerifyHospital :exec
+UPDATE hospital
+SET is_verified = ?,
+    last_inspected = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type VerifyHospitalParams struct {
+	IsVerified sql.NullBool `json:"isVerified"`
+	ID         int64        `json:"id"`
+}
+
+func (q *Queries) VerifyHospital(ctx context.Context, arg VerifyHospitalParams) error {
+	_, err := q.db.ExecContext(ctx, verifyHospital, arg.IsVerified, arg.ID)
+	return err
 }
 
 const verifyUserEmail = `-- name: VerifyUserEmail :exec

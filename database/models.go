@@ -18,6 +18,7 @@ type Hospital struct {
 	VisitingHours      string       `json:"visitingHours"`
 	IsOpen             sql.NullBool `json:"isOpen"`
 	LastInspected      sql.NullTime `json:"lastInspected"`
+	IsVerified         sql.NullBool `json:"isVerified"`
 	Facilities         string       `json:"facilities"`
 	QueueLength        int64        `json:"queueLength"`
 	AverageWaitingTime int64        `json:"averageWaitingTime"`
