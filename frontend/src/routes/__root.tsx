@@ -31,6 +31,11 @@ export const Route = createRootRoute({
     const isAuthRoute = ["/login", "/signup", "/verify-phone"].includes(
       location.pathname
     );
+
+    if (location.pathname === "/" && isAuthenticated()) {
+      throw redirect({ to: "/dashboard" });
+    }
+
     if (isAuthRoute) {
       if (isAuthenticated()) {
         throw redirect({ to: "/dashboard" });
