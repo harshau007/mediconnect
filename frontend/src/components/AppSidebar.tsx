@@ -56,7 +56,8 @@ export default function AppSidebar() {
       <SidebarFooter className="flex flex-col items-center gap-4 p-3">
         <NavUser
           user={{
-            name: getUser()?.firstName + " " + getUser()?.lastName,
+            firstname: getUser()?.firstName || "",
+            lastname: getUser()?.lastName || "",
             email: getUser()?.email || "",
             avatar: "",
           }}

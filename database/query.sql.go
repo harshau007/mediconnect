@@ -103,22 +103,22 @@ func (q *Queries) CreateOTP(ctx context.Context, arg CreateOTPParams) (Otp, erro
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO user (
-  first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role
+  first_name, last_name, phone, email, is_verified, aadhar_number, password, role
 ) VALUES (
   ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at
+RETURNING id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	FirstName       string       `json:"firstName"`
-	LastName        string       `json:"lastName"`
-	Phone           string       `json:"phone"`
-	Email           string       `json:"email"`
-	IsEmailVerified sql.NullBool `json:"isEmailVerified"`
-	AadharNumber    string       `json:"aadharNumber"`
-	Password        string       `json:"password"`
-	Role            string       `json:"role"`
+	FirstName    string       `json:"firstName"`
+	LastName     string       `json:"lastName"`
+	Phone        string       `json:"phone"`
+	Email        string       `json:"email"`
+	IsVerified   sql.NullBool `json:"isVerified"`
+	AadharNumber string       `json:"aadharNumber"`
+	Password     string       `json:"password"`
+	Role         string       `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -127,7 +127,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.LastName,
 		arg.Phone,
 		arg.Email,
-		arg.IsEmailVerified,
+		arg.IsVerified,
 		arg.AadharNumber,
 		arg.Password,
 		arg.Role,
@@ -139,7 +139,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.LastName,
 		&i.Phone,
 		&i.Email,
-		&i.IsEmailVerified,
+		&i.IsVerified,
 		&i.AadharNumber,
 		&i.Password,
 		&i.Role,
@@ -287,7 +287,7 @@ func (q *Queries) GetOTPByUserID(ctx context.Context, userID int64) (Otp, error)
 }
 
 const getUserByAadhar = `-- name: GetUserByAadhar :one
-SELECT id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at FROM user
+SELECT id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at FROM user
 WHERE aadhar_number = ? LIMIT 1
 `
 
@@ -300,7 +300,7 @@ func (q *Queries) GetUserByAadhar(ctx context.Context, aadharNumber string) (Use
 		&i.LastName,
 		&i.Phone,
 		&i.Email,
-		&i.IsEmailVerified,
+		&i.IsVerified,
 		&i.AadharNumber,
 		&i.Password,
 		&i.Role,
@@ -311,7 +311,7 @@ func (q *Queries) GetUserByAadhar(ctx context.Context, aadharNumber string) (Use
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at FROM user
+SELECT id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at FROM user
 WHERE email = ? LIMIT 1
 `
 
@@ -324,7 +324,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.LastName,
 		&i.Phone,
 		&i.Email,
-		&i.IsEmailVerified,
+		&i.IsVerified,
 		&i.AadharNumber,
 		&i.Password,
 		&i.Role,
@@ -335,7 +335,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at FROM user
+SELECT id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at FROM user
 WHERE id = ? LIMIT 1
 `
 
@@ -348,7 +348,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.LastName,
 		&i.Phone,
 		&i.Email,
-		&i.IsEmailVerified,
+		&i.IsVerified,
 		&i.AadharNumber,
 		&i.Password,
 		&i.Role,
@@ -359,7 +359,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByPhone = `-- name: GetUserByPhone :one
-SELECT id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at FROM user
+SELECT id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at FROM user
 WHERE phone = ? LIMIT 1
 `
 
@@ -372,7 +372,7 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 		&i.LastName,
 		&i.Phone,
 		&i.Email,
-		&i.IsEmailVerified,
+		&i.IsVerified,
 		&i.AadharNumber,
 		&i.Password,
 		&i.Role,
@@ -491,23 +491,23 @@ func (q *Queries) ListOTPs(ctx context.Context) ([]Otp, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at FROM user
+SELECT id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at FROM user
 WHERE 
-  (is_email_verified = ? OR ? = FALSE) AND
+  (is_verified = ? OR ? = FALSE) AND
   (role = ? OR ? = FALSE)
 ORDER BY updated_at DESC
 `
 
 type ListUsersParams struct {
-	IsEmailVerified sql.NullBool `json:"isEmailVerified"`
-	Column2         interface{}  `json:"column2"`
-	Role            string       `json:"role"`
-	Column4         interface{}  `json:"column4"`
+	IsVerified sql.NullBool `json:"isVerified"`
+	Column2    interface{}  `json:"column2"`
+	Role       string       `json:"role"`
+	Column4    interface{}  `json:"column4"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
 	rows, err := q.db.QueryContext(ctx, listUsers,
-		arg.IsEmailVerified,
+		arg.IsVerified,
 		arg.Column2,
 		arg.Role,
 		arg.Column4,
@@ -525,7 +525,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.LastName,
 			&i.Phone,
 			&i.Email,
-			&i.IsEmailVerified,
+			&i.IsVerified,
 			&i.AadharNumber,
 			&i.Password,
 			&i.Role,
@@ -548,19 +548,19 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 const updateEmailVerified = `-- name: UpdateEmailVerified :one
 UPDATE user
 SET 
-  is_email_verified = ?, 
+  is_verified = ?, 
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at
+RETURNING id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at
 `
 
 type UpdateEmailVerifiedParams struct {
-	IsEmailVerified sql.NullBool `json:"isEmailVerified"`
-	ID              int64        `json:"id"`
+	IsVerified sql.NullBool `json:"isVerified"`
+	ID         int64        `json:"id"`
 }
 
 func (q *Queries) UpdateEmailVerified(ctx context.Context, arg UpdateEmailVerifiedParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateEmailVerified, arg.IsEmailVerified, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateEmailVerified, arg.IsVerified, arg.ID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -568,7 +568,7 @@ func (q *Queries) UpdateEmailVerified(ctx context.Context, arg UpdateEmailVerifi
 		&i.LastName,
 		&i.Phone,
 		&i.Email,
-		&i.IsEmailVerified,
+		&i.IsVerified,
 		&i.AadharNumber,
 		&i.Password,
 		&i.Role,
@@ -698,25 +698,25 @@ SET
   last_name = ?,
   phone = ?,
   email = ?,
-  is_email_verified = ?, 
+  is_verified = ?, 
   aadhar_number = ?, 
   password = ?, 
   role = ?, 
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role, created_at, updated_at
+RETURNING id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	FirstName       string       `json:"firstName"`
-	LastName        string       `json:"lastName"`
-	Phone           string       `json:"phone"`
-	Email           string       `json:"email"`
-	IsEmailVerified sql.NullBool `json:"isEmailVerified"`
-	AadharNumber    string       `json:"aadharNumber"`
-	Password        string       `json:"password"`
-	Role            string       `json:"role"`
-	ID              int64        `json:"id"`
+	FirstName    string       `json:"firstName"`
+	LastName     string       `json:"lastName"`
+	Phone        string       `json:"phone"`
+	Email        string       `json:"email"`
+	IsVerified   sql.NullBool `json:"isVerified"`
+	AadharNumber string       `json:"aadharNumber"`
+	Password     string       `json:"password"`
+	Role         string       `json:"role"`
+	ID           int64        `json:"id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -725,7 +725,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.LastName,
 		arg.Phone,
 		arg.Email,
-		arg.IsEmailVerified,
+		arg.IsVerified,
 		arg.AadharNumber,
 		arg.Password,
 		arg.Role,
@@ -738,7 +738,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.LastName,
 		&i.Phone,
 		&i.Email,
-		&i.IsEmailVerified,
+		&i.IsVerified,
 		&i.AadharNumber,
 		&i.Password,
 		&i.Role,

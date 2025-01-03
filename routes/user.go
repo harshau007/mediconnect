@@ -17,5 +17,7 @@ func SetupUserRoutes(api *gin.RouterGroup, queries *database.Queries, db *sql.DB
 		user.PATCH("/verify", controllers.VerifyOTP(queries, db))
 		user.POST("/login", controllers.Login(queries, db))
 		user.GET("/profile", middleware.AuthMiddleware(queries, db), controllers.GetMe())
+		user.PATCH("/update", middleware.AuthMiddleware(queries, db), controllers.UpdateUser(queries, db))
+		user.PATCH("/update/password", middleware.AuthMiddleware(queries, db), controllers.ChangePassword(queries, db))
 	}
 }

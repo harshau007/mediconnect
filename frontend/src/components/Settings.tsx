@@ -1,5 +1,8 @@
+import { api } from "@/lib/api";
+import { isAuthenticated } from "@/lib/auth";
 import { useUserStore } from "@/store/useUserStore";
-import { useState } from "react";
+import { User } from "@/types/user";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -13,26 +16,95 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
+interface ApiResponse {
+  data: User;
+  status: string;
+  message: string;
+}
+
 export default function Settings() {
   const [isSaveChangesOpen, setIsSaveChangesOpen] = useState(false);
   const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false);
   const [updatedFields, setUpdatedFields] = useState({});
-  const { getUser } = useUserStore();
+  const { getUser, updateUser } = useUserStore();
+  const [localUser, setLocalUser] = useState<Partial<User>>({});
+  const [password, setPassword] = useState<
+    Partial<{
+      oldPassword: string;
+      newPassword: string;
+      confirmPassword: string;
+    }>
+  >({});
 
-  // const [localUser, setLocalUser] = useState(getUser());
+  useEffect(() => {
+    setLocalUser(getUser() as User);
+  }, []);
 
-  const handleInputChange = (field: string, value: string) => {
-    // setLocalUser((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof User, value: string) => {
+    setLocalUser((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
     setUpdatedFields((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePasswordChange = (field: string, value: string) => {
+    setPassword((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleSaveChanges = () => {
     setIsSaveChangesOpen(true);
   };
 
-  const confirmSaveChanges = () => {
-    // updateUser(localUser);
+  const confirmSaveChanges = async () => {
+    const authToken = isAuthenticated();
+    const response = await api.patch(
+      "/user/update",
+      {
+        firstName: localUser?.firstName,
+        lastName: localUser?.lastName,
+        email: localUser?.email,
+        phone: localUser?.phone,
+        aadharNumber: localUser?.aadharNumber,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    if (!response.data) {
+      throw new Error("Failed to fetch hospitals");
+    }
+    const data: ApiResponse = await response.data;
+    updateUser(data.data);
     setIsSaveChangesOpen(false);
+  };
+
+  const handleUpdatePassword = async () => {
+    const authToken = isAuthenticated();
+    const response = await api.patch(
+      "/user/update/password",
+      {
+        oldPassword: password.oldPassword,
+        newPassword: password.newPassword,
+        confirmPassword: password.confirmPassword,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    if (!response.data) {
+      throw new Error("Failed to fetch hospitals");
+    }
+    const data: ApiResponse = await response.data;
+    console.log(data);
+    setIsUpdatePasswordOpen(false);
   };
 
   return (
@@ -55,7 +127,7 @@ export default function Settings() {
                 <Input
                   id="first-name"
                   placeholder="Enter your first name"
-                  value={getUser()?.firstName}
+                  value={localUser?.firstName}
                   onChange={(e) =>
                     handleInputChange("firstName", e.target.value)
                   }
@@ -66,7 +138,7 @@ export default function Settings() {
                 <Input
                   id="last-name"
                   placeholder="Enter your last name"
-                  value={getUser()?.lastName}
+                  value={localUser?.lastName}
                   onChange={(e) =>
                     handleInputChange("lastName", e.target.value)
                   }
@@ -77,7 +149,7 @@ export default function Settings() {
                 <Input
                   id="email"
                   placeholder="Enter your email"
-                  value={getUser()?.email}
+                  value={localUser?.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                 />
               </div>
@@ -88,7 +160,7 @@ export default function Settings() {
                 id="phone"
                 placeholder="Enter your phone number"
                 readOnly
-                value={getUser()?.phone}
+                value={localUser?.phone}
                 className="bg-gray-100/10 cursor-not-allowed"
               />
             </div>
@@ -98,19 +170,10 @@ export default function Settings() {
                 id="aadhar"
                 placeholder="Enter your Aadhar number"
                 readOnly
-                value={getUser()?.aadharNumber}
+                value={localUser?.aadharNumber}
                 className="bg-gray-100/10 cursor-not-allowed"
               />
             </div>
-            {/* <div className="grid gap-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell us a little bit about yourself"
-                value={""}
-                onChange={(e) => handleInputChange("bio", e.target.value)}
-              />
-            </div> */}
           </CardContent>
           <CardFooter className="flex justify-end gap-4">
             <Button
@@ -139,6 +202,9 @@ export default function Settings() {
                 id="currentPassword"
                 type="password"
                 placeholder="Enter current password"
+                onChange={(e) =>
+                  handlePasswordChange("oldPassword", e.target.value)
+                }
               />
             </div>
             <div className="grid gap-2">
@@ -147,6 +213,9 @@ export default function Settings() {
                 id="newPassword"
                 type="password"
                 placeholder="Enter new password"
+                onChange={(e) =>
+                  handlePasswordChange("newPassword", e.target.value)
+                }
               />
             </div>
             <div className="grid gap-2">
@@ -155,18 +224,18 @@ export default function Settings() {
                 id="confirmNewPassword"
                 type="password"
                 placeholder="Confirm new password"
+                onChange={(e) =>
+                  handlePasswordChange("confirmPassword", e.target.value)
+                }
               />
             </div>
           </div>
           <div className="flex justify-end mt-4">
-            <Button onClick={() => setIsUpdatePasswordOpen(false)}>
-              Update Password
-            </Button>
+            <Button onClick={handleUpdatePassword}>Update Password</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Save Changes Confirmation Dialog */}
       <Dialog open={isSaveChangesOpen} onOpenChange={setIsSaveChangesOpen}>
         <DialogContent>
           <DialogHeader>
@@ -177,7 +246,7 @@ export default function Settings() {
             <ul className="list-disc pl-5">
               {Object.entries(updatedFields).map(([field, value]) => (
                 <li key={field}>
-                  <strong>{field}:</strong> {"value"}
+                  <strong>{field}:</strong> <span>{value as string}</span>
                 </li>
               ))}
             </ul>

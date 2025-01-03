@@ -67,13 +67,13 @@ WHERE aadhar_number = ? LIMIT 1;
 -- name: ListUsers :many
 SELECT * FROM user
 WHERE 
-  (is_email_verified = ? OR ? = FALSE) AND
+  (is_verified = ? OR ? = FALSE) AND
   (role = ? OR ? = FALSE)
 ORDER BY updated_at DESC;
 
 -- name: CreateUser :one
 INSERT INTO user (
-  first_name, last_name, phone, email, is_email_verified, aadhar_number, password, role
+  first_name, last_name, phone, email, is_verified, aadhar_number, password, role
 ) VALUES (
   ?, ?, ?, ?, ?, ?, ?, ?
 )
@@ -86,7 +86,7 @@ SET
   last_name = ?,
   phone = ?,
   email = ?,
-  is_email_verified = ?, 
+  is_verified = ?, 
   aadhar_number = ?, 
   password = ?, 
   role = ?, 
@@ -97,7 +97,7 @@ RETURNING *;
 -- name: UpdateEmailVerified :one
 UPDATE user
 SET 
-  is_email_verified = ?, 
+  is_verified = ?, 
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;

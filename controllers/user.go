@@ -81,7 +81,7 @@ func SignUp(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 			Phone:        userReq.Phone,
 			AadharNumber: userReq.AadharNumber,
 			Role:         "user",
-			IsEmailVerified: sql.NullBool{
+			IsVerified: sql.NullBool{
 				Bool:  false,
 				Valid: true,
 			},
@@ -230,7 +230,7 @@ func VerifyOTP(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		if user.IsEmailVerified.Bool {
+		if user.IsVerified.Bool {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"status":  "error",
 				"message": "user already verified",
@@ -257,7 +257,7 @@ func VerifyOTP(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 
 		_, err = qtx.UpdateEmailVerified(ctx, database.UpdateEmailVerifiedParams{
 			ID: user.ID,
-			IsEmailVerified: sql.NullBool{
+			IsVerified: sql.NullBool{
 				Bool:  true,
 				Valid: true,
 			},
@@ -330,7 +330,7 @@ func Login(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		if !user.IsEmailVerified.Bool {
+		if !user.IsVerified.Bool {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"status":  "error",
 				"message": "User not verified",
@@ -382,5 +382,180 @@ func GetMe() gin.HandlerFunc {
 		user := ctx.MustGet("user").(database.User)
 		user.Password = ""
 		ctx.JSON(http.StatusOK, user)
+	}
+}
+
+type UpdateUserRequest struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+}
+
+type UpdateUserResponse struct {
+	Status  string        `json:"status"`
+	Message string        `json:"message"`
+	Data    database.User `json:"data"`
+}
+
+func UpdateUser(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var userReq UpdateUserRequest
+		if err := ctx.ShouldBindJSON(&userReq); err != nil {
+			ctx.JSON(http.StatusNotAcceptable, gin.H{
+				"status":  "error",
+				"message": "Invalid request body",
+			})
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Error starting transaction",
+			})
+			return
+		}
+		defer tx.Rollback()
+
+		qtx := queries.WithTx(tx)
+
+		user := ctx.MustGet("user").(database.User)
+		if !user.IsVerified.Bool {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "User not verified",
+			})
+			return
+		}
+
+		uptUser, err := qtx.UpdateUser(ctx, database.UpdateUserParams{
+			ID:           user.ID,
+			FirstName:    userReq.FirstName,
+			LastName:     userReq.LastName,
+			Email:        userReq.Email,
+			Phone:        user.Phone,
+			AadharNumber: user.AadharNumber,
+			IsVerified: sql.NullBool{
+				Bool:  user.IsVerified.Bool,
+				Valid: user.IsVerified.Valid,
+			},
+			Password: user.Password,
+			Role:     user.Role,
+		})
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Error updating user",
+			})
+			return
+		}
+		tx.Commit()
+
+		uptUser.Password = ""
+		ctx.JSON(http.StatusOK, UpdateUserResponse{
+			Status:  "success",
+			Message: "User updated successfully",
+			Data:    uptUser,
+		})
+	}
+}
+
+type ChangePasswordRequest struct {
+	OldPassword     string `json:"oldPassword"`
+	NewPassword     string `json:"newPassword"`
+	ConfirmPassword string `json:"confirmPassword"`
+}
+
+type ChangePasswordResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+func ChangePassword(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var userReq ChangePasswordRequest
+		if err := ctx.ShouldBindJSON(&userReq); err != nil {
+			ctx.JSON(http.StatusNotAcceptable, gin.H{
+				"status":  "error",
+				"message": "Invalid request body",
+			})
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Error starting transaction",
+			})
+			return
+		}
+		defer tx.Rollback()
+
+		qtx := queries.WithTx(tx)
+
+		user := ctx.MustGet("user").(database.User)
+		if !user.IsVerified.Bool {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "User not verified",
+			})
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userReq.OldPassword))
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"status":  "error",
+				"message": "Invalid old password",
+			})
+			return
+		}
+
+		if userReq.NewPassword != userReq.ConfirmPassword {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Password mismatch",
+			})
+			return
+		}
+
+		newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(userReq.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Error hashing password",
+			})
+			return
+		}
+
+		_, err = qtx.UpdateUser(ctx, database.UpdateUserParams{
+			ID:           user.ID,
+			FirstName:    user.FirstName,
+			LastName:     user.LastName,
+			Email:        user.Email,
+			Phone:        user.Phone,
+			AadharNumber: user.AadharNumber,
+			IsVerified: sql.NullBool{
+				Bool:  user.IsVerified.Bool,
+				Valid: user.IsVerified.Valid,
+			},
+			Password: string(newHashedPassword),
+			Role:     user.Role,
+		})
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Error updating password",
+			})
+			return
+		}
+		tx.Commit()
+
+		ctx.JSON(http.StatusOK, ChangePasswordResponse{
+			Status:  "success",
+			Message: "Password updated successfully",
+		})
 	}
 }

@@ -36,15 +36,15 @@ type Otp struct {
 }
 
 type User struct {
-	ID              int64        `json:"id"`
-	FirstName       string       `json:"firstName"`
-	LastName        string       `json:"lastName"`
-	Phone           string       `json:"phone"`
-	Email           string       `json:"email"`
-	IsEmailVerified sql.NullBool `json:"isEmailVerified"`
-	AadharNumber    string       `json:"aadharNumber"`
-	Password        string       `json:"password"`
-	Role            string       `json:"role"`
-	CreatedAt       sql.NullTime `json:"createdAt"`
-	UpdatedAt       sql.NullTime `json:"updatedAt"`
+	ID           int64        `json:"id"`
+	FirstName    string       `json:"firstName"`
+	LastName     string       `json:"lastName"`
+	Phone        string       `json:"phone"`
+	Email        string       `json:"email"`
+	IsVerified   sql.NullBool `json:"isVerified"`
+	AadharNumber string       `json:"aadharNumber"`
+	Password     string       `json:"password"`
+	Role         string       `json:"role"`
+	CreatedAt    sql.NullTime `json:"createdAt"`
+	UpdatedAt    sql.NullTime `json:"updatedAt"`
 }

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +23,6 @@ func AuthMiddleware(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 		}
 
 		parts := strings.Split(authHeader, " ")
-		fmt.Println(parts)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"status":  "error",

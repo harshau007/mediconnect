@@ -26,14 +26,29 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-const formSchema = z.object({
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }),
-});
+const formSchema = z
+  .object({
+    email: z.string().email({
+      message: "Please enter a valid email address.",
+    }),
+    password: z.string().min(8, {
+      message: "Password must be at least 8 characters.",
+    }),
+  })
+  .refine(
+    async (data) => {
+      try {
+        const response = await api.post("/user/login", data);
+        return !!response.data.token;
+      } catch (error) {
+        return false;
+      }
+    },
+    {
+      message: "Invalid username or password",
+      path: ["password"], // This will show the error under the password field
+    }
+  );
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
@@ -52,19 +67,22 @@ export default function Login() {
     setIsLoading(true);
     try {
       const response = await api.post("/user/login", values);
-      setAuthToken(response.data.token);
-      navigate({ to: "/dashboard" });
+      if (response.data && response.data.token) {
+        setAuthToken(response.data.token);
+        navigate({ to: "/dashboard" });
+
+        const authToken = isAuthenticated();
+        const profileResponse = await api.get("/user/profile", {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+        setUser(profileResponse.data);
+      }
     } catch (error) {
       console.error("Login failed:", error);
+      // The error will be handled by Zod validation
     } finally {
-      const authToken = isAuthenticated();
-      const response = await api.get("/user/profile", {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-      console.log(response.data);
-      setUser(response.data);
       setIsLoading(false);
     }
   }

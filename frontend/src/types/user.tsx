@@ -4,6 +4,10 @@ export interface User {
   lastName: string;
   phone: string;
   email: string;
+  isVerified: {
+    Bool: boolean;
+    Valid: boolean;
+  };
   aadharNumber: string;
   password: string;
   createdAt: {

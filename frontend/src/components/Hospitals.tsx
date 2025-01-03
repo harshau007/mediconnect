@@ -61,7 +61,6 @@ export default function Hospitals() {
           throw new Error("Failed to fetch hospitals");
         }
         const data: ApiResponse = await response.data;
-        console.log(data);
         setHospitals(data.data);
         setHospitalsPage(data.data);
         setIsLoading(false);
