@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
-import { setAuthToken } from "@/lib/auth";
+import { isAuthenticated, setAuthToken } from "@/lib/auth";
+import { useUserStore } from "@/store/useUserStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -36,6 +37,7 @@ const formSchema = z.object({
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const { setUser } = useUserStore();
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -54,8 +56,15 @@ export default function Login() {
       navigate({ to: "/dashboard" });
     } catch (error) {
       console.error("Login failed:", error);
-      // Handle error (e.g., show error message to user)
     } finally {
+      const authToken = isAuthenticated();
+      const response = await api.get("/user/profile", {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      console.log(response.data);
+      setUser(response.data);
       setIsLoading(false);
     }
   }

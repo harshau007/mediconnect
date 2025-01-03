@@ -1,1 +1,2 @@
 - [ ] Implement basics
+- [ ] Add Update User func from frontend to backend

@@ -1,5 +1,4 @@
 import AppSidebar from "@/components/AppSidebar";
-import Header from "@/components/Header";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { isAuthenticated } from "@/lib/auth";
 import {
@@ -69,7 +68,6 @@ function RouteComponent() {
       <AppSidebar />
       <SidebarInset className="flex w-full lg:w-[90rem]">
         <div className="flex flex-col flex-1 overflow-hidden">
-          <Header />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
             <SidebarTrigger className="mb-4 lg:hidden" />
             <Outlet />

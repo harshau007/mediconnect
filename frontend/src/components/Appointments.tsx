@@ -44,7 +44,7 @@ export default function Appointments() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Your Appointments</h1>
+        <h1 className="text-2xl font-bold">Your Appointments</h1>
         <Button onClick={handleBookAppointment}>Book New Appointment</Button>
       </div>
 

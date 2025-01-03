@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/harshau007/mediconnect/controllers"
 	"github.com/harshau007/mediconnect/database"
+	"github.com/harshau007/mediconnect/middleware"
 )
 
 func SetupUserRoutes(api *gin.RouterGroup, queries *database.Queries, db *sql.DB) {
@@ -15,5 +16,6 @@ func SetupUserRoutes(api *gin.RouterGroup, queries *database.Queries, db *sql.DB
 		user.POST("/verify", controllers.VerifyUser(queries, db))
 		user.PATCH("/verify", controllers.VerifyOTP(queries, db))
 		user.POST("/login", controllers.Login(queries, db))
+		user.GET("/profile", middleware.AuthMiddleware(queries, db), controllers.GetMe())
 	}
 }

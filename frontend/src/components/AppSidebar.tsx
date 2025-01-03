@@ -1,6 +1,8 @@
 import { cn } from "@/lib/utils";
+import { useUserStore } from "@/store/useUserStore";
 import { Link, useMatchRoute } from "@tanstack/react-router";
-import { History, Home, Hospital, Rocket, Settings } from "lucide-react";
+import { History, Home, Hospital, Rocket } from "lucide-react";
+import { NavUser } from "./NavUser";
 import {
   Sidebar,
   SidebarContent,
@@ -16,11 +18,11 @@ const navItems = [
   { to: "/hospitals", icon: Hospital, label: "Hospitals" },
   { to: "/appointments", icon: Rocket, label: "Appointments" },
   { to: "/medical-history", icon: History, label: "Medical History" },
-  { to: "/settings", icon: Settings, label: "Settings" },
 ] as const;
 
 export default function AppSidebar() {
   const matchRoute = useMatchRoute();
+  const { getUser } = useUserStore();
 
   return (
     <Sidebar>
@@ -51,8 +53,14 @@ export default function AppSidebar() {
           })}
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-3">
-        <p className="text-xs text-muted-foreground">© 2024 MediConnect</p>
+      <SidebarFooter className="flex flex-col items-center gap-4 p-3">
+        <NavUser
+          user={{
+            name: getUser()?.firstName + " " + getUser()?.lastName,
+            email: getUser()?.email || "",
+            avatar: "",
+          }}
+        />
       </SidebarFooter>
     </Sidebar>
   );

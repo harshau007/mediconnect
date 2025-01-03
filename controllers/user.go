@@ -376,3 +376,11 @@ func GenerateToken(data map[string]string) string {
 
 	return tokenString
 }
+
+func GetMe() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		user := ctx.MustGet("user").(database.User)
+		user.Password = ""
+		ctx.JSON(http.StatusOK, user)
+	}
+}
