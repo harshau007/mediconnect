@@ -8,7 +8,78 @@ package database
 import (
 	"context"
 	"database/sql"
+	"time"
 )
+
+const checkAppointmentExists = `-- name: CheckAppointmentExists :one
+SELECT COUNT(*) AS count
+FROM appointments
+WHERE user_id = ? AND hospital_id = ? AND appointment_date = ? AND appointment_time = ?
+`
+
+type CheckAppointmentExistsParams struct {
+	UserID          int64     `json:"userId"`
+	HospitalID      int64     `json:"hospitalId"`
+	AppointmentDate time.Time `json:"appointmentDate"`
+	AppointmentTime time.Time `json:"appointmentTime"`
+}
+
+func (q *Queries) CheckAppointmentExists(ctx context.Context, arg CheckAppointmentExistsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkAppointmentExists,
+		arg.UserID,
+		arg.HospitalID,
+		arg.AppointmentDate,
+		arg.AppointmentTime,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createAppointment = `-- name: CreateAppointment :one
+
+INSERT INTO appointments (
+    user_id,
+    hospital_id,
+    appointment_date,
+    appointment_time,
+    status
+) VALUES (
+    ?, ?, ?, ?, ?
+)
+RETURNING id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at
+`
+
+type CreateAppointmentParams struct {
+	UserID          int64     `json:"userId"`
+	HospitalID      int64     `json:"hospitalId"`
+	AppointmentDate time.Time `json:"appointmentDate"`
+	AppointmentTime time.Time `json:"appointmentTime"`
+	Status          string    `json:"status"`
+}
+
+// Appointment
+func (q *Queries) CreateAppointment(ctx context.Context, arg CreateAppointmentParams) (Appointment, error) {
+	row := q.db.QueryRowContext(ctx, createAppointment,
+		arg.UserID,
+		arg.HospitalID,
+		arg.AppointmentDate,
+		arg.AppointmentTime,
+		arg.Status,
+	)
+	var i Appointment
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.HospitalID,
+		&i.AppointmentDate,
+		&i.AppointmentTime,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const createHospital = `-- name: CreateHospital :one
 INSERT INTO hospital (
@@ -79,6 +150,7 @@ func (q *Queries) CreateHospital(ctx context.Context, arg CreateHospitalParams) 
 }
 
 const createOTP = `-- name: CreateOTP :one
+
 INSERT INTO otp (
     user_id,
     otp_number
@@ -93,6 +165,7 @@ type CreateOTPParams struct {
 	OtpNumber string `json:"otpNumber"`
 }
 
+// OTP
 func (q *Queries) CreateOTP(ctx context.Context, arg CreateOTPParams) (Otp, error) {
 	row := q.db.QueryRowContext(ctx, createOTP, arg.UserID, arg.OtpNumber)
 	var i Otp
@@ -152,6 +225,16 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteAppointment = `-- name: DeleteAppointment :exec
+DELETE FROM appointments
+WHERE id = ?
+`
+
+func (q *Queries) DeleteAppointment(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteAppointment, id)
+	return err
 }
 
 const deleteHospital = `-- name: DeleteHospital :exec
@@ -224,11 +307,35 @@ func (q *Queries) DeleteUserByPhone(ctx context.Context, phone string) error {
 	return err
 }
 
+const getAppointmentByID = `-- name: GetAppointmentByID :one
+SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+WHERE id = ?
+LIMIT 1
+`
+
+func (q *Queries) GetAppointmentByID(ctx context.Context, id int64) (Appointment, error) {
+	row := q.db.QueryRowContext(ctx, getAppointmentByID, id)
+	var i Appointment
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.HospitalID,
+		&i.AppointmentDate,
+		&i.AppointmentTime,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getHospital = `-- name: GetHospital :one
+
 SELECT id, name, address, phone, email, website, visiting_hours, is_open, last_inspected, is_verified, facilities, queue_length, average_waiting_time, current_waiting_time, is_crowded, created_at, updated_at FROM hospital
 WHERE id = ? LIMIT 1
 `
 
+// Hospital
 func (q *Queries) GetHospital(ctx context.Context, id int64) (Hospital, error) {
 	row := q.db.QueryRowContext(ctx, getHospital, id)
 	var i Hospital
@@ -341,10 +448,12 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
+
 SELECT id, first_name, last_name, phone, email, is_verified, aadhar_number, password, role, created_at, updated_at FROM user
 WHERE id = ? LIMIT 1
 `
 
+// User
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i User
@@ -386,6 +495,129 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listAppointments = `-- name: ListAppointments :many
+SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+WHERE 
+    (user_id = ? OR user_id IS NOT NULL) AND
+    (hospital_id = ? OR hospital_id IS NOT NULL)
+ORDER BY appointment_date DESC, appointment_time DESC
+`
+
+type ListAppointmentsParams struct {
+	UserID     int64 `json:"userId"`
+	HospitalID int64 `json:"hospitalId"`
+}
+
+func (q *Queries) ListAppointments(ctx context.Context, arg ListAppointmentsParams) ([]Appointment, error) {
+	rows, err := q.db.QueryContext(ctx, listAppointments, arg.UserID, arg.HospitalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Appointment
+	for rows.Next() {
+		var i Appointment
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.HospitalID,
+			&i.AppointmentDate,
+			&i.AppointmentTime,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAppointmentsByDate = `-- name: ListAppointmentsByDate :many
+SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+WHERE 
+    appointment_date = ?
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAppointmentsByDate(ctx context.Context, appointmentDate time.Time) ([]Appointment, error) {
+	rows, err := q.db.QueryContext(ctx, listAppointmentsByDate, appointmentDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Appointment
+	for rows.Next() {
+		var i Appointment
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.HospitalID,
+			&i.AppointmentDate,
+			&i.AppointmentTime,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAppointmentsByTime = `-- name: ListAppointmentsByTime :many
+SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+WHERE 
+    appointment_time = ?
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAppointmentsByTime(ctx context.Context, appointmentTime time.Time) ([]Appointment, error) {
+	rows, err := q.db.QueryContext(ctx, listAppointmentsByTime, appointmentTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Appointment
+	for rows.Next() {
+		var i Appointment
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.HospitalID,
+			&i.AppointmentDate,
+			&i.AppointmentTime,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listOTPs = `-- name: ListOTPs :many
@@ -627,6 +859,81 @@ func (q *Queries) ListVerifiedHospitals(ctx context.Context, arg ListVerifiedHos
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateAppointment = `-- name: UpdateAppointment :one
+UPDATE appointments
+SET 
+    user_id = ?,
+    hospital_id = ?,
+    appointment_date = ?,
+    appointment_time = ?,
+    status = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at
+`
+
+type UpdateAppointmentParams struct {
+	UserID          int64     `json:"userId"`
+	HospitalID      int64     `json:"hospitalId"`
+	AppointmentDate time.Time `json:"appointmentDate"`
+	AppointmentTime time.Time `json:"appointmentTime"`
+	Status          string    `json:"status"`
+	ID              int64     `json:"id"`
+}
+
+func (q *Queries) UpdateAppointment(ctx context.Context, arg UpdateAppointmentParams) (Appointment, error) {
+	row := q.db.QueryRowContext(ctx, updateAppointment,
+		arg.UserID,
+		arg.HospitalID,
+		arg.AppointmentDate,
+		arg.AppointmentTime,
+		arg.Status,
+		arg.ID,
+	)
+	var i Appointment
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.HospitalID,
+		&i.AppointmentDate,
+		&i.AppointmentTime,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateAppointmentStatus = `-- name: UpdateAppointmentStatus :one
+UPDATE appointments
+SET 
+    status = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at
+`
+
+type UpdateAppointmentStatusParams struct {
+	Status string `json:"status"`
+	ID     int64  `json:"id"`
+}
+
+func (q *Queries) UpdateAppointmentStatus(ctx context.Context, arg UpdateAppointmentStatusParams) (Appointment, error) {
+	row := q.db.QueryRowContext(ctx, updateAppointmentStatus, arg.Status, arg.ID)
+	var i Appointment
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.HospitalID,
+		&i.AppointmentDate,
+		&i.AppointmentTime,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateEmailVerified = `-- name: UpdateEmailVerified :one

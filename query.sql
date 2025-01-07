@@ -1,3 +1,5 @@
+-- Hospital
+
 -- name: GetHospital :one
 SELECT * FROM hospital
 WHERE id = ? LIMIT 1;
@@ -66,6 +68,8 @@ WHERE id = ?;
 UPDATE hospital
 SET last_inspected = CURRENT_TIMESTAMP
 WHERE id = ?;
+
+-- User
 
 -- name: GetUserByID :one
 SELECT * FROM user
@@ -143,6 +147,8 @@ SET is_email_verified = TRUE,
     updated_at = CURRENT_TIMESTAMP
 WHERE email = ?;
 
+-- OTP
+
 -- name: CreateOTP :one
 INSERT INTO otp (
     user_id,
@@ -181,3 +187,70 @@ WHERE id = ?;
 -- name: DeleteOTPByUserID :exec
 DELETE FROM otp
 WHERE user_id = ?;
+
+-- Appointment
+
+-- name: CreateAppointment :one
+INSERT INTO appointments (
+    user_id,
+    hospital_id,
+    appointment_date,
+    appointment_time,
+    status
+) VALUES (
+    ?, ?, ?, ?, ?
+)
+RETURNING *;
+
+-- name: GetAppointmentByID :one
+SELECT * FROM appointments
+WHERE id = ?
+LIMIT 1;
+
+-- name: ListAppointments :many
+SELECT * FROM appointments
+WHERE 
+    (user_id = ? OR user_id IS NOT NULL) AND
+    (hospital_id = ? OR hospital_id IS NOT NULL)
+ORDER BY appointment_date DESC, appointment_time DESC;
+
+-- name: ListAppointmentsByDate :many
+SELECT * FROM appointments
+WHERE 
+    appointment_date = ?
+ORDER BY created_at DESC;
+
+-- name: ListAppointmentsByTime :many
+SELECT * FROM appointments
+WHERE 
+    appointment_time = ?
+ORDER BY created_at DESC;
+
+-- name: CheckAppointmentExists :one
+SELECT COUNT(*) AS count
+FROM appointments
+WHERE user_id = ? AND hospital_id = ? AND appointment_date = ? AND appointment_time = ?;
+
+-- name: UpdateAppointment :one
+UPDATE appointments
+SET 
+    user_id = ?,
+    hospital_id = ?,
+    appointment_date = ?,
+    appointment_time = ?,
+    status = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
+-- name: UpdateAppointmentStatus :one
+UPDATE appointments
+SET 
+    status = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
+-- name: DeleteAppointment :exec
+DELETE FROM appointments
+WHERE id = ?;

@@ -6,7 +6,19 @@ package database
 
 import (
 	"database/sql"
+	"time"
 )
+
+type Appointment struct {
+	ID              int64        `json:"id"`
+	UserID          int64        `json:"userId"`
+	HospitalID      int64        `json:"hospitalId"`
+	AppointmentDate time.Time    `json:"appointmentDate"`
+	AppointmentTime time.Time    `json:"appointmentTime"`
+	Status          string       `json:"status"`
+	CreatedAt       sql.NullTime `json:"createdAt"`
+	UpdatedAt       sql.NullTime `json:"updatedAt"`
+}
 
 type Hospital struct {
 	ID                 int64        `json:"id"`

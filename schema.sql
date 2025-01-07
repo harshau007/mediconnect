@@ -39,3 +39,15 @@ CREATE TABLE If NOT EXISTS otp (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE if NOT EXISTS appointments (
+    id INTEGER PRIMARY KEY NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES user(id) on DELETE CASCADE,
+    hospital_id INTEGER NOT NULL REFERENCES hospital(id) on DELETE CASCADE,
+    appointment_date TIMESTAMP NOT NULL,
+    appointment_time TIMESTAMP NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, hospital_id, appointment_date, appointment_time)
+);

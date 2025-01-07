@@ -54,6 +54,7 @@ func main() {
 	{
 		routes.SetupHospitalRoutes(api, queries, db)
 		routes.SetupUserRoutes(api, queries, db)
+		routes.SetupAppointmentRoutes(api, queries, db)
 	}
 
 	// Catch-all route for frontend (e.g., React/SPA fallback)
