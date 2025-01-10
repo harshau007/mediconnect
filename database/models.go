@@ -13,6 +13,8 @@ type Appointment struct {
 	ID              int64        `json:"id"`
 	UserID          int64        `json:"userId"`
 	HospitalID      int64        `json:"hospitalId"`
+	HospitalName    string       `json:"hospitalName"`
+	DoctorName      string       `json:"doctorName"`
 	AppointmentDate time.Time    `json:"appointmentDate"`
 	AppointmentTime time.Time    `json:"appointmentTime"`
 	Status          string       `json:"status"`

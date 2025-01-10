@@ -44,6 +44,8 @@ CREATE TABLE if NOT EXISTS appointments (
     id INTEGER PRIMARY KEY NOT NULL,
     user_id INTEGER NOT NULL REFERENCES user(id) on DELETE CASCADE,
     hospital_id INTEGER NOT NULL REFERENCES hospital(id) on DELETE CASCADE,
+    hospital_name VARCHAR(255) NOT NULL,
+    doctor_name VARCHAR(255) NOT NULL,
     appointment_date TIMESTAMP NOT NULL,
     appointment_time TIMESTAMP NOT NULL,
     status VARCHAR(255) NOT NULL,

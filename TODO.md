@@ -2,5 +2,6 @@
 - [x] Add Update User func from frontend to backend
 - [x] Add Hospital Verification
 - [ ] Add Hospital reg routes in frontend
-- [ ] Implement appointment func
+- [x] Implement appointment func
+- [ ] Make sure timing is correct and reschedule working (or remove it with alternative implemented)
 - [ ] Implement Medical History func

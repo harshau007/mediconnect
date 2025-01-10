@@ -194,11 +194,13 @@ WHERE user_id = ?;
 INSERT INTO appointments (
     user_id,
     hospital_id,
+    hospital_name,
+    doctor_name,
     appointment_date,
     appointment_time,
     status
 ) VALUES (
-    ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?
 )
 RETURNING *;
 
@@ -236,6 +238,7 @@ UPDATE appointments
 SET 
     user_id = ?,
     hospital_id = ?,
+    hospital_name = ?,
     appointment_date = ?,
     appointment_time = ?,
     status = ?,
@@ -246,6 +249,7 @@ RETURNING *;
 -- name: UpdateAppointmentStatus :one
 UPDATE appointments
 SET 
+    doctor_name = ?,
     status = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?

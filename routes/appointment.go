@@ -13,7 +13,7 @@ func SetupAppointmentRoutes(api *gin.RouterGroup, queries *database.Queries, db 
 	appointment := api.Group("/appointment")
 	appointment.Use(middleware.AuthMiddleware(queries, db))
 	{
-		appointment.GET("/", controllers.GetAppointmentByID(queries, db))
-		appointment.POST("/", controllers.CreateAppointment(queries, db))
+		appointment.GET("", controllers.GetAppointmentByID(queries, db))
+		appointment.POST("", controllers.CreateAppointment(queries, db))
 	}
 }

@@ -15,7 +15,6 @@ func GetAppointmentByID(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		idType := ctx.Query("type")
 
-		fmt.Println(idType)
 		switch idType {
 		case "appointment":
 			id := ctx.Query("id")
@@ -194,6 +193,8 @@ func CreateAppointment(queries *database.Queries, db *sql.DB) gin.HandlerFunc {
 		appointment, err := qtx.CreateAppointment(ctx, database.CreateAppointmentParams{
 			UserID:          user.ID,
 			HospitalID:      hospital.ID,
+			HospitalName:    hospital.Name,
+			DoctorName:      "",
 			AppointmentDate: parsedDate,
 			AppointmentTime: parsedTime,
 			Status:          "pending",

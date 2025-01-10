@@ -41,18 +41,22 @@ const createAppointment = `-- name: CreateAppointment :one
 INSERT INTO appointments (
     user_id,
     hospital_id,
+    hospital_name,
+    doctor_name,
     appointment_date,
     appointment_time,
     status
 ) VALUES (
-    ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at
+RETURNING id, user_id, hospital_id, hospital_name, doctor_name, appointment_date, appointment_time, status, created_at, updated_at
 `
 
 type CreateAppointmentParams struct {
 	UserID          int64     `json:"userId"`
 	HospitalID      int64     `json:"hospitalId"`
+	HospitalName    string    `json:"hospitalName"`
+	DoctorName      string    `json:"doctorName"`
 	AppointmentDate time.Time `json:"appointmentDate"`
 	AppointmentTime time.Time `json:"appointmentTime"`
 	Status          string    `json:"status"`
@@ -63,6 +67,8 @@ func (q *Queries) CreateAppointment(ctx context.Context, arg CreateAppointmentPa
 	row := q.db.QueryRowContext(ctx, createAppointment,
 		arg.UserID,
 		arg.HospitalID,
+		arg.HospitalName,
+		arg.DoctorName,
 		arg.AppointmentDate,
 		arg.AppointmentTime,
 		arg.Status,
@@ -72,6 +78,8 @@ func (q *Queries) CreateAppointment(ctx context.Context, arg CreateAppointmentPa
 		&i.ID,
 		&i.UserID,
 		&i.HospitalID,
+		&i.HospitalName,
+		&i.DoctorName,
 		&i.AppointmentDate,
 		&i.AppointmentTime,
 		&i.Status,
@@ -308,7 +316,7 @@ func (q *Queries) DeleteUserByPhone(ctx context.Context, phone string) error {
 }
 
 const getAppointmentByID = `-- name: GetAppointmentByID :one
-SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+SELECT id, user_id, hospital_id, hospital_name, doctor_name, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
 WHERE id = ?
 LIMIT 1
 `
@@ -320,6 +328,8 @@ func (q *Queries) GetAppointmentByID(ctx context.Context, id int64) (Appointment
 		&i.ID,
 		&i.UserID,
 		&i.HospitalID,
+		&i.HospitalName,
+		&i.DoctorName,
 		&i.AppointmentDate,
 		&i.AppointmentTime,
 		&i.Status,
@@ -498,7 +508,7 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 }
 
 const listAppointments = `-- name: ListAppointments :many
-SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+SELECT id, user_id, hospital_id, hospital_name, doctor_name, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
 WHERE 
     (user_id = ? OR user_id IS NOT NULL) AND
     (hospital_id = ? OR hospital_id IS NOT NULL)
@@ -523,6 +533,8 @@ func (q *Queries) ListAppointments(ctx context.Context, arg ListAppointmentsPara
 			&i.ID,
 			&i.UserID,
 			&i.HospitalID,
+			&i.HospitalName,
+			&i.DoctorName,
 			&i.AppointmentDate,
 			&i.AppointmentTime,
 			&i.Status,
@@ -543,7 +555,7 @@ func (q *Queries) ListAppointments(ctx context.Context, arg ListAppointmentsPara
 }
 
 const listAppointmentsByDate = `-- name: ListAppointmentsByDate :many
-SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+SELECT id, user_id, hospital_id, hospital_name, doctor_name, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
 WHERE 
     appointment_date = ?
 ORDER BY created_at DESC
@@ -562,6 +574,8 @@ func (q *Queries) ListAppointmentsByDate(ctx context.Context, appointmentDate ti
 			&i.ID,
 			&i.UserID,
 			&i.HospitalID,
+			&i.HospitalName,
+			&i.DoctorName,
 			&i.AppointmentDate,
 			&i.AppointmentTime,
 			&i.Status,
@@ -582,7 +596,7 @@ func (q *Queries) ListAppointmentsByDate(ctx context.Context, appointmentDate ti
 }
 
 const listAppointmentsByTime = `-- name: ListAppointmentsByTime :many
-SELECT id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
+SELECT id, user_id, hospital_id, hospital_name, doctor_name, appointment_date, appointment_time, status, created_at, updated_at FROM appointments
 WHERE 
     appointment_time = ?
 ORDER BY created_at DESC
@@ -601,6 +615,8 @@ func (q *Queries) ListAppointmentsByTime(ctx context.Context, appointmentTime ti
 			&i.ID,
 			&i.UserID,
 			&i.HospitalID,
+			&i.HospitalName,
+			&i.DoctorName,
 			&i.AppointmentDate,
 			&i.AppointmentTime,
 			&i.Status,
@@ -866,17 +882,19 @@ UPDATE appointments
 SET 
     user_id = ?,
     hospital_id = ?,
+    hospital_name = ?,
     appointment_date = ?,
     appointment_time = ?,
     status = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at
+RETURNING id, user_id, hospital_id, hospital_name, doctor_name, appointment_date, appointment_time, status, created_at, updated_at
 `
 
 type UpdateAppointmentParams struct {
 	UserID          int64     `json:"userId"`
 	HospitalID      int64     `json:"hospitalId"`
+	HospitalName    string    `json:"hospitalName"`
 	AppointmentDate time.Time `json:"appointmentDate"`
 	AppointmentTime time.Time `json:"appointmentTime"`
 	Status          string    `json:"status"`
@@ -887,6 +905,7 @@ func (q *Queries) UpdateAppointment(ctx context.Context, arg UpdateAppointmentPa
 	row := q.db.QueryRowContext(ctx, updateAppointment,
 		arg.UserID,
 		arg.HospitalID,
+		arg.HospitalName,
 		arg.AppointmentDate,
 		arg.AppointmentTime,
 		arg.Status,
@@ -897,6 +916,8 @@ func (q *Queries) UpdateAppointment(ctx context.Context, arg UpdateAppointmentPa
 		&i.ID,
 		&i.UserID,
 		&i.HospitalID,
+		&i.HospitalName,
+		&i.DoctorName,
 		&i.AppointmentDate,
 		&i.AppointmentTime,
 		&i.Status,
@@ -909,24 +930,28 @@ func (q *Queries) UpdateAppointment(ctx context.Context, arg UpdateAppointmentPa
 const updateAppointmentStatus = `-- name: UpdateAppointmentStatus :one
 UPDATE appointments
 SET 
+    doctor_name = ?,
     status = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, hospital_id, appointment_date, appointment_time, status, created_at, updated_at
+RETURNING id, user_id, hospital_id, hospital_name, doctor_name, appointment_date, appointment_time, status, created_at, updated_at
 `
 
 type UpdateAppointmentStatusParams struct {
-	Status string `json:"status"`
-	ID     int64  `json:"id"`
+	DoctorName string `json:"doctorName"`
+	Status     string `json:"status"`
+	ID         int64  `json:"id"`
 }
 
 func (q *Queries) UpdateAppointmentStatus(ctx context.Context, arg UpdateAppointmentStatusParams) (Appointment, error) {
-	row := q.db.QueryRowContext(ctx, updateAppointmentStatus, arg.Status, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateAppointmentStatus, arg.DoctorName, arg.Status, arg.ID)
 	var i Appointment
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.HospitalID,
+		&i.HospitalName,
+		&i.DoctorName,
 		&i.AppointmentDate,
 		&i.AppointmentTime,
 		&i.Status,
